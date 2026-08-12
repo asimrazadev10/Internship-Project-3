@@ -1,4 +1,5 @@
-// import type { Core } from '@strapi/strapi';
+import type { Core } from '@strapi/strapi';
+import { grantPublicReadAccess, seedBlog } from './seed';
 
 export default {
   /**
@@ -13,8 +14,11 @@ export default {
    * An asynchronous bootstrap function that runs before
    * your application gets started.
    *
-   * This gives you an opportunity to set up your data model,
-   * run jobs, or perform some special logic.
+   * Seeds sample blog content on first run and makes it publicly readable.
+   * Both calls are idempotent, so restarts are harmless.
    */
-  bootstrap(/* { strapi }: { strapi: Core.Strapi } */) {},
+  async bootstrap({ strapi }: { strapi: Core.Strapi }) {
+    await seedBlog(strapi);
+    await grantPublicReadAccess(strapi);
+  },
 };
