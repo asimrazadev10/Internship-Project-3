@@ -97,6 +97,12 @@ export const DEMO_BODY = [
     language: 'ts',
     showLineNumbers: true,
   },
+  {
+    __component: 'blocks.image',
+    file: 'figure-components.jpg',
+    caption: 'A component is defined once and reused across content types.',
+    credit: 'Lorem Picsum',
+  },
 ];
 
 // Applied only where the field is currently empty.

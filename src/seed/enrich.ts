@@ -20,6 +20,40 @@ import { ARTICLE_ENRICHMENT, DEMO_BODY, DEMO_BODY_SLUG } from './data';
  * are compared by `updatedAt`; a newer draft means unpublished changes
  * exist, and the article is left alone.
  */
+
+/**
+ * Turns seed blocks carrying `file` into real blocks carrying an uploaded
+ * media id. A block whose file is missing from the Media Library is dropped
+ * rather than written with no image, since `image` is required.
+ */
+async function resolveBlockMedia(
+  strapi: Core.Strapi,
+  blocks: Array<Record<string, unknown>>,
+): Promise<Array<Record<string, unknown>>> {
+  const resolved: Array<Record<string, unknown>> = [];
+
+  for (const block of blocks) {
+    if (typeof block.file !== 'string') {
+      resolved.push(block);
+      continue;
+    }
+
+    const { file, ...rest } = block;
+    const uploaded = await strapi.db
+      .query('plugin::upload.file')
+      .findOne({ where: { name: file } });
+
+    if (!uploaded) {
+      strapi.log.warn(`[seed] no uploaded media named '${file}', dropping its block`);
+      continue;
+    }
+
+    resolved.push({ ...rest, image: uploaded.id });
+  }
+
+  return resolved;
+}
+
 export async function enrichExistingArticles(strapi: Core.Strapi): Promise<void> {
   const articles = await strapi.documents('api::article.article').findMany({
     populate: { body: true, seo: true },
@@ -38,8 +72,32 @@ export async function enrichExistingArticles(strapi: Core.Strapi): Promise<void>
 
     // The demo article gets the four-block body, but only if an editor has not
     // already written one.
-    if (article.slug === DEMO_BODY_SLUG && (article.body ?? []).length === 0) {
-      data.body = DEMO_BODY;
+    const currentBody = (article.body ?? []) as Array<Record<string, unknown>>;
+
+    if (article.slug === DEMO_BODY_SLUG && currentBody.length === 0) {
+      data.body = await resolveBlockMedia(strapi, DEMO_BODY);
+    } else if (
+      article.slug === DEMO_BODY_SLUG &&
+      !currentBody.some((block) => block.__component === 'blocks.image')
+    ) {
+      // The demo article predates the image block. Append just that block
+      // rather than rewriting a body an editor may have changed. Guarded on
+      // the block's absence, so a second run appends nothing.
+      const figure = await resolveBlockMedia(
+        strapi,
+        DEMO_BODY.filter((block) => block.__component === 'blocks.image'),
+      );
+
+      if (figure.length > 0) {
+        // `currentBody` was fetched with status: 'published', so its blocks
+        // carry the published entity's component ids. update() writes the
+        // draft entity, whose components have different ids — passing the
+        // published ids back is rejected as "not related to the entity".
+        // Stripping `id` lets the document service recreate them on the
+        // draft with the same content instead of trying to match by id.
+        const currentBodyWithoutIds = currentBody.map(({ id: _id, ...rest }) => rest);
+        data.body = [...currentBodyWithoutIds, ...figure];
+      }
     }
 
     if (enrichment?.kicker && !article.kicker) {
