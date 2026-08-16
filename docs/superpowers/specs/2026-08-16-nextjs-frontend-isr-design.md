@@ -83,7 +83,7 @@ Four named queries build on it:
 | Function | Strapi request | Tags |
 |---|---|---|
 | `getArticles()` | `/api/articles?populate=*&sort=publishedAt:desc` | `articles` |
-| `getArticleBySlug(slug)` | `/api/articles?filters[slug][$eq]=…&populate=*` | `articles`, `article:<slug>` |
+| `getArticleBySlug(slug)` | `/api/articles?filters[slug][$eq]=…&populate=*` | `article:<slug>` only |
 | `getCategories()` | `/api/categories` | `categories` |
 | `getCategoryBySlug(slug)` | `/api/categories?filters[slug][$eq]=…&populate[articles][populate]=author` | `categories`, `category:<slug>` |
 
@@ -101,7 +101,11 @@ relations.
 tag as a bare string:
 
 - `articles` — anything showing a list of articles
-- `article:<slug>` — one article's detail page
+- `article:<slug>` — one article's detail page. A detail page carries *only*
+  this tag, never `articles`: tagging it with the list tag as well would make an
+  edit to any article invalidate every other article's page, defeating the point
+  of per-entity tags. The revalidate route invalidates both tags on an edit, so
+  the lists and the edited page refresh while siblings stay cached.
 - `categories` — the category bar and any category listing
 - `category:<slug>` — one category's detail page
 
@@ -110,7 +114,7 @@ tag as a bare string:
 | Route | `generateStaticParams` | `revalidate` | Tags on its data |
 |---|---|---|---|
 | `/` | — | 60 | `articles` |
-| `/articles/[slug]` | every article slug | 60 | `articles`, `article:<slug>` |
+| `/articles/[slug]` | every article slug | 60 | `article:<slug>` |
 | `/categories/[slug]` | every category slug | 60 | `categories`, `category:<slug>` |
 
 `dynamicParams` stays at its default (`true`): a slug created after the build
@@ -216,25 +220,34 @@ production server:
 1. Require Strapi to be answering on :1337; wait for it as the existing script
    does.
 2. `npm run build && npm run start` in `frontend/`, waiting for :3000.
-3. `GET /` returns 200. Second request carries `x-nextjs-cache: HIT`.
+3. `GET /` returns 200, and a repeat request returns the same render stamp.
+
+   Every page's footer renders a server-side timestamp in a
+   `data-render-stamp` attribute, which changes only when the page is actually
+   regenerated. Assertions read that attribute rather than the
+   `x-nextjs-cache` header, which has moved between Next versions. It also
+   removes the need for authenticated writes to Strapi — public writes are
+   403 by design — since regeneration itself is what the tests care about.
 4. `GET /articles/<known-slug>` returns 200 and contains the article title.
 5. `GET /articles/does-not-exist` returns 404.
 6. `POST /api/revalidate` with a wrong secret returns 401.
-7. Change an article title through Strapi's API, `POST` the matching webhook
-   payload with the correct secret, then assert the next `GET` of that article
-   shows the new title. Assert scoping too: a second article's page still
-   responds `x-nextjs-cache: HIT`, showing the `article:<slug>` tag did not
-   invalidate its neighbours.
-8. Restore the original title.
+7. `POST` an article webhook payload with the correct secret, then assert that
+   article page's render stamp changes (polling briefly, since Next may serve
+   one stale response while regenerating).
+8. Assert scoping: another article's detail page keeps its original stamp,
+   showing `article:<slug>` did not invalidate its neighbours. The home and
+   category pages *do* regenerate — they carry the `articles` tag — which is
+   the intended behavior.
 
-The script leaves the tree as it found it and stops the Next server it started.
+The script starts and stops its own Next server and leaves the tree unchanged.
 
 ## Acceptance Criteria
 
 - All three routes render seeded content from Strapi in a production build.
 - `generateStaticParams` prerenders every seeded article and category slug.
-- An article edit plus webhook makes the change visible on the next request,
-  without a rebuild and without waiting out the 60-second window.
+- A webhook delivery regenerates the affected page within seconds, without a
+  rebuild and without waiting out the 60-second window, and leaves sibling
+  article pages cached.
 - A revalidate call with a wrong or missing secret returns 401 and revalidates
   nothing.
 - `scripts/verify-blog-api.sh` still passes unchanged.
