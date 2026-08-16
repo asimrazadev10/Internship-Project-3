@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const revalidateTag = vi.fn();
 vi.mock('next/cache', () => ({
-  revalidateTag: (tag: string, profile: string) => revalidateTag(tag, profile),
+  revalidateTag: (tag: string, profile: string | { expire?: number }) =>
+    revalidateTag(tag, profile),
 }));
 
 import { GET, POST, tagsFor } from '@/app/api/revalidate/route';
@@ -54,8 +55,8 @@ describe('POST /api/revalidate', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ revalidated: ['articles', 'article:a-post'] });
-    expect(revalidateTag).toHaveBeenCalledWith('articles', 'max');
-    expect(revalidateTag).toHaveBeenCalledWith('article:a-post', 'max');
+    expect(revalidateTag).toHaveBeenCalledWith('articles', { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith('article:a-post', { expire: 0 });
   });
 
   it('accepts an unknown model and revalidates nothing', async () => {

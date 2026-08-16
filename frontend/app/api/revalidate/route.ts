@@ -48,8 +48,12 @@ export async function POST(request: Request): Promise<Response> {
   const body = (await request.json().catch(() => null)) as WebhookBody | null;
   const tags = body?.model ? tagsFor(body.model, body.entry?.slug) : [];
 
+  // This endpoint only ever fires from a Strapi webhook, so the edit must be
+  // live on the very next request rather than one request later. `'max'`
+  // gives stale-while-revalidate semantics (still-stale until next visit);
+  // `{ expire: 0 }` forces immediate expiration instead.
   for (const tag of tags) {
-    revalidateTag(tag, 'max');
+    revalidateTag(tag, { expire: 0 });
   }
 
   return json({ revalidated: tags });
