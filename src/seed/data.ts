@@ -71,3 +71,65 @@ export const PUBLIC_READ_ACTIONS = [
   'api::category.category.findOne',
   'api::site-setting.site-setting.find',
 ];
+
+// The article that demonstrates every block type, keyed by slug so the
+// enrichment pass can find it in an existing database.
+export const DEMO_BODY_SLUG = 'practical-guide-to-content-modeling';
+
+export const DEMO_BODY = [
+  {
+    __component: 'blocks.rich-text',
+    body: '## Model the page, not the taxonomy\n\nA dynamic zone earns its place when different sections of a page need different shapes. Prose, a pulled quote, an aside, and a code sample are four different shapes.',
+  },
+  {
+    __component: 'blocks.pull-quote',
+    quote: 'If every type is an island of flat fields, you have built a spreadsheet with extra steps.',
+    attribution: 'The Strapi Press',
+  },
+  {
+    __component: 'blocks.callout',
+    text: 'Components are reusable across content types. Dynamic zones are ordered lists of them, chosen per entry by the editor.',
+    tone: 'note',
+  },
+  {
+    __component: 'blocks.code',
+    code: 'await strapi.documents("api::article.article").findMany({\n  populate: { body: { populate: "*" } },\n});',
+    language: 'ts',
+    showLineNumbers: true,
+  },
+];
+
+// Applied only where the field is currently empty.
+export const ARTICLE_ENRICHMENT: Record<
+  string,
+  { kicker?: string; featured?: boolean; seo?: { metaTitle: string; metaDescription: string } }
+> = {
+  'practical-guide-to-content-modeling': {
+    kicker: 'tutorial',
+    featured: true,
+    seo: {
+      metaTitle: 'A Practical Guide to Content Modeling',
+      metaDescription:
+        'Collection types, components, and dynamic zones: the decisions that make a CMS API pleasant to consume.',
+    },
+  },
+  'why-your-database-schema-is-your-real-api': {
+    kicker: 'opinion',
+    seo: {
+      metaTitle: 'Your Database Schema Is Your Real API',
+      metaDescription:
+        'Every shortcut in the schema becomes a permanent feature of the interface your clients depend on.',
+    },
+  },
+  'css-has-quietly-become-a-good-language': { kicker: 'analysis' },
+};
+
+export const SITE_SETTINGS = {
+  tagline: 'Honest. Independent. Statically regenerated.',
+  subscribeLabel: 'Subscribe',
+  footerText: 'The Strapi Press',
+  navLinks: [
+    { label: 'Home', href: '/' },
+    { label: 'Engineering', href: '/categories/engineering' },
+  ],
+};
