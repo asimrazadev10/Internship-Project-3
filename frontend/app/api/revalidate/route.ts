@@ -1,6 +1,12 @@
 import { timingSafeEqual } from 'node:crypto';
 import { revalidateTag } from 'next/cache';
-import { ARTICLES_TAG, CATEGORIES_TAG, articleTag, categoryTag } from '@/lib/tags';
+import {
+  ARTICLES_TAG,
+  CATEGORIES_TAG,
+  SITE_SETTINGS_TAG,
+  articleTag,
+  categoryTag,
+} from '@/lib/tags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +26,10 @@ export function tagsFor(model: string, slug?: string | null): string[] {
     // page's byline heals within the REVALIDATE_WINDOW (60s) instead.
     case 'author':
       return [ARTICLES_TAG];
+    // A single type has no slug, and its content is in the layout, so this
+    // invalidates every route by design.
+    case 'site-setting':
+      return [SITE_SETTINGS_TAG];
     default:
       return [];
   }
