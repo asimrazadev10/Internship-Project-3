@@ -15,13 +15,13 @@ afterEach(() => {
 
 describe('strapiFetch', () => {
   it('unwraps the data envelope and forwards tags and the revalidate window', async () => {
-    const fetchMock = vi.fn(() => json([{ id: 1 }]));
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([{ id: 1 }]));
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await strapiFetch<{ id: number }[]>('/api/things', { tags: ['things'] });
 
     expect(result).toEqual([{ id: 1 }]);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('http://cms.test/api/things');
     expect((init as { next: unknown }).next).toEqual({ tags: ['things'], revalidate: 60 });
   });
@@ -36,14 +36,16 @@ describe('strapiFetch', () => {
 });
 
 describe('queries', () => {
-  it('tags an article detail query with both the list and the slug tag', async () => {
-    const fetchMock = vi.fn(() => json([{ slug: 'a-post', title: 'A Post' }]));
+  it('tags an article detail query with only the slug tag', async () => {
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) =>
+      json([{ slug: 'a-post', title: 'A Post' }]),
+    );
     vi.stubGlobal('fetch', fetchMock);
 
     const article = await getArticleBySlug('a-post');
 
     expect(article?.title).toBe('A Post');
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('filters[slug][$eq]=a-post');
     // Only the slug tag. Adding the list tag here would mean an edit to any
     // article invalidates every other article's page.
@@ -57,7 +59,7 @@ describe('queries', () => {
   });
 
   it('sorts the article list newest first', async () => {
-    const fetchMock = vi.fn(() => json([]));
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));
     vi.stubGlobal('fetch', fetchMock);
 
     await getArticles();
