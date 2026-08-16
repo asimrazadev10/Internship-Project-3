@@ -1,6 +1,8 @@
 import type { Core } from '@strapi/strapi';
 import { ARTICLES, AUTHORS, CATEGORIES, PUBLIC_READ_ACTIONS } from './data';
 
+export { registerIsrWebhook } from './webhook';
+
 /**
  * Creates sample authors, categories, and published articles.
  * Idempotent: returns immediately if any article already exists.
