@@ -85,7 +85,7 @@ Four named queries build on it:
 | `getArticles()` | `/api/articles?populate=*&sort=publishedAt:desc` | `articles` |
 | `getArticleBySlug(slug)` | `/api/articles?filters[slug][$eq]=…&populate=*` | `article:<slug>` only |
 | `getCategories()` | `/api/categories` | `categories` |
-| `getCategoryBySlug(slug)` | `/api/categories?filters[slug][$eq]=…&populate[articles][populate]=author` | `categories`, `category:<slug>` |
+| `getCategoryBySlug(slug)` | `/api/categories?filters[slug][$eq]=…&populate[articles][populate]=author` | `categories`, `category:<slug>`, `articles` |
 
 Single-entity queries return the first element of the list response, or `null`
 when the array is empty. Callers turn `null` into `notFound()`.
@@ -106,8 +106,16 @@ tag as a bare string:
   edit to any article invalidate every other article's page, defeating the point
   of per-entity tags. The revalidate route invalidates both tags on an edit, so
   the lists and the edited page refresh while siblings stay cached.
-- `categories` — the category bar and any category listing
-- `category:<slug>` — one category's detail page
+- `categories` — the category bar and any category listing. The root layout
+  calls `getCategories()` on every render (the category bar is on every page),
+  so this tag is attached to every route: any category create/update/delete
+  revalidates the whole site, not just category pages. Defensible since the
+  bar is always visible, but worth knowing when reasoning about invalidation
+  scope.
+- `category:<slug>` — one category's detail page. It also carries `articles`,
+  since it renders each member article's title, excerpt, and byline via
+  `ArticleCard` and must refresh when any article is edited, not just when the
+  category itself changes.
 
 ## ISR Behavior
 
@@ -115,7 +123,7 @@ tag as a bare string:
 |---|---|---|---|
 | `/` | — | 60 | `articles` |
 | `/articles/[slug]` | every article slug | 60 | `article:<slug>` |
-| `/categories/[slug]` | every category slug | 60 | `categories`, `category:<slug>` |
+| `/categories/[slug]` | every category slug | 60 | `categories`, `category:<slug>`, `articles` |
 
 `dynamicParams` stays at its default (`true`): a slug created after the build
 renders on first request and is cached from then on. The 60-second window is the
@@ -138,7 +146,8 @@ one number in the config, one literal per route, documented in `.env.example`.
 3. Map the model to tags:
    - `article` → `articles`, and `article:<entry.slug>` when a slug is present
    - `category` → `categories`, `category:<entry.slug>`
-   - `author` → `articles` (bylines appear on every list)
+   - `author` → `articles` (refreshes bylines on lists immediately; detail
+     pages, tagged `article:<slug>` only, heal within the 60s window instead)
    - anything else → revalidate nothing, return `200` with an empty list
 4. Call `revalidateTag` for each, and return `{ revalidated: string[] }` so the
    call is verifiable by hand.

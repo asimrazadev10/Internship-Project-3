@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f6f4ef;
+  --color-ink: #363737;
+  --color-headline: #161613;
+  --color-accent: #f2312c;
+  --color-rule: #ddd9d0;
+
+  --font-display: var(--font-archivo-narrow), sans-serif;
+  --font-serif: var(--font-spectral), Georgia, serif;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+  font-size: 19px;
+  line-height: 1.65;
+}
+
+/* Headlines are set tight and dark; the serif carries the editorial voice. */
+h1, h2, h3 {
+  color: var(--color-headline);
+  font-family: var(--font-serif);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}

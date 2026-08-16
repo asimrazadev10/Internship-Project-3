@@ -34,6 +34,10 @@
     ".tmp/",
     ".strapi/",
 
+    // The Next.js frontend has its own tsconfig/build pipeline and is not
+    // part of the Strapi server compilation.
+    "frontend/",
+
     // Do not include admin files in the server compilation
     "src/admin/",
     // Do not include test files
