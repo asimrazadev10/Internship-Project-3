@@ -11,6 +11,14 @@ import { ARTICLE_ENRICHMENT, DEMO_BODY, DEMO_BODY_SLUG } from './data';
  *
  * It only ever writes into a field that is currently empty, so it never
  * overwrites an editor's work and running it twice changes nothing.
+ *
+ * Because draft-and-publish is on, `publish()` promotes the entire current
+ * draft, not just the fields this pass wrote. If an editor has unpublished
+ * work-in-progress on an article, force-publishing it as a side effect of
+ * seeding would be exactly the kind of overwrite this task is meant to
+ * avoid. So before touching an article, its draft and published versions
+ * are compared by `updatedAt`; a newer draft means unpublished changes
+ * exist, and the article is left alone.
  */
 export async function enrichExistingArticles(strapi: Core.Strapi): Promise<void> {
   const articles = await strapi.documents('api::article.article').findMany({
@@ -49,6 +57,20 @@ export async function enrichExistingArticles(strapi: Core.Strapi): Promise<void>
     }
 
     if (Object.keys(data).length === 0) {
+      continue;
+    }
+
+    // Guard against force-publishing an editor's unpublished work-in-progress.
+    // Fetch the draft version and compare timestamps with the published
+    // version already in hand: a strictly newer draft means there are
+    // unpublished changes, and this pass must not touch the article at all.
+    const draft = await strapi.documents('api::article.article').findOne({
+      documentId: article.documentId,
+      status: 'draft',
+    });
+
+    if (draft && new Date(draft.updatedAt as string) > new Date(article.updatedAt as string)) {
+      strapi.log.info(`[seed] Skipped '${article.slug}': it has unpublished draft changes`);
       continue;
     }
 
