@@ -1,5 +1,5 @@
-import { ARTICLES_TAG, CATEGORIES_TAG, articleTag, categoryTag } from '@/lib/tags';
-import type { Article, Category } from '@/lib/types';
+import { ARTICLES_TAG, CATEGORIES_TAG, SITE_SETTINGS_TAG, articleTag, categoryTag } from '@/lib/tags';
+import type { Article, Category, SiteSettings } from '@/lib/types';
 
 const baseUrl = () => process.env.STRAPI_URL ?? 'http://localhost:1337';
 const revalidateWindow = () => {
@@ -11,11 +11,25 @@ const revalidateWindow = () => {
  * The only function that knows Strapi's URL and response envelope. Callers get
  * plain typed objects and never see `{ data, meta }`.
  */
-export async function strapiFetch<T>(path: string, { tags }: { tags: string[] }): Promise<T> {
+export async function strapiFetch<T>(
+  path: string,
+  { tags, allow404 = false }: { tags: string[]; allow404?: boolean },
+): Promise<T> {
   const response = await fetch(`${baseUrl()}${path}`, {
     headers: { Accept: 'application/json' },
     next: { tags, revalidate: revalidateWindow() },
   });
+
+  // A single type with no entry ever created returns 404, not 200 with
+  // `data: null` — unlike a collection type, which just returns an empty
+  // array. `allow404` is opt-in per caller: Site Settings must survive a
+  // fresh, unseeded database (the root layout calls getSiteSettings on
+  // every page) and fall back to hardcoded copy, so it treats 404 as "not
+  // configured" rather than an error. Every other caller, and every other
+  // non-2xx status even with allow404 set, still throws below.
+  if (allow404 && response.status === 404) {
+    return null as T;
+  }
 
   if (!response.ok) {
     throw new Error(`Strapi responded ${response.status} for ${path}`);
@@ -25,15 +39,29 @@ export async function strapiFetch<T>(path: string, { tags }: { tags: string[] })
   return body.data;
 }
 
+// `populate[author]=*` and `populate[categories]=*` 400 against the live API
+// ("Invalid key avatar at author.avatar") because a bare `*` on a relation
+// attempts to deep-populate its own relations/media, which the author and
+// category schemas don't support at that depth. `=true` populates the
+// relation itself (shallow) without recursing, which is all callers need.
+// Deliberately does not populate `body` or `seo`: none of its callers (the
+// home page, generateStaticParams, the category page) render either, and
+// `body` in particular can carry a full article's rich-text content. Every
+// article list render would otherwise ship that weight over the wire for
+// nothing. `getArticleBySlug` still populates both — the detail page renders
+// them.
 export function getArticles(): Promise<Article[]> {
-  return strapiFetch<Article[]>('/api/articles?populate=*&sort=publishedAt:desc', {
-    tags: [ARTICLES_TAG],
-  });
+  return strapiFetch<Article[]>(
+    '/api/articles?populate[author]=true&populate[categories]=true&sort=publishedAt:desc',
+    { tags: [ARTICLES_TAG] },
+  );
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
   const matches = await strapiFetch<Article[]>(
-    `/api/articles?filters[slug][$eq]=${encodeURIComponent(slug)}&populate=*`,
+    `/api/articles?filters[slug][$eq]=${encodeURIComponent(slug)}` +
+      '&populate[body][populate]=*&populate[seo]=*' +
+      '&populate[author]=true&populate[categories]=true',
     // Deliberately not tagged `articles`: a detail page must survive an edit to
     // a different article. The revalidate route invalidates both tags on an
     // edit, which reaches the lists and this page but no sibling pages.
@@ -44,6 +72,19 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 
 export function getCategories(): Promise<Category[]> {
   return strapiFetch<Category[]>('/api/categories?sort=name:asc', { tags: [CATEGORIES_TAG] });
+}
+
+/**
+ * A single type returns one object rather than an array, and returns null
+ * before its first entry exists — a fresh database, before seeding. See the
+ * `allow404` comment in strapiFetch for why this query tolerates a 404.
+ */
+export async function getSiteSettings(): Promise<SiteSettings | null> {
+  const settings = await strapiFetch<SiteSettings | null>(
+    '/api/site-setting?populate[navLinks]=*',
+    { tags: [SITE_SETTINGS_TAG], allow404: true },
+  );
+  return settings ?? null;
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {

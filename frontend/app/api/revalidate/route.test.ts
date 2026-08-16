@@ -33,6 +33,10 @@ describe('tagsFor', () => {
   it('falls back to the list tag when an entry has no slug', () => {
     expect(tagsFor('article', undefined)).toEqual(['articles']);
   });
+
+  it('maps the site-setting single type to its tag', () => {
+    expect(tagsFor('site-setting', null)).toEqual(['site-settings']);
+  });
 });
 
 describe('POST /api/revalidate', () => {

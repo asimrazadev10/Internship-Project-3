@@ -159,6 +159,17 @@ calls it after `seedBlog`.
 This makes the same content appear on both a fresh database and an existing one,
 which is what lets the verification script assert rather than skip.
 
+**As built:** the seeded `ARTICLES` array itself was left unchanged — no
+article literal carries `body`, `seo`, `featured`, or `kicker` inline. Instead
+`enrichExistingArticles` runs unconditionally, immediately after `seedBlog`, in
+the same bootstrap call, on both a fresh database and an existing one. There is
+no code path where `seedBlog` runs without `enrichExistingArticles` following
+it, so the two are equivalent in end state: every database that has ever
+booted this app reaches the same enriched articles either way. Keeping the
+enrichment in one function rather than duplicating it into the `ARTICLES`
+literals as well avoids two sources of truth for the same fields drifting out
+of sync.
+
 ## Frontend
 
 ### Data layer

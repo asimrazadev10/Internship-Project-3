@@ -82,7 +82,20 @@ Verification:
 ```bash
 ./scripts/verify-blog-api.sh      # content model and permissions
 ./scripts/verify-isr.sh           # builds the frontend and checks ISR behavior
+./scripts/verify-content-model.sh  # components, dynamic zone, and single type
 ```
+
+### Content model
+
+Articles carry an optional `body` dynamic zone built from four components —
+rich text, pull quote, callout, and code. Articles without one fall back to the
+original `content` markdown field, so both paths stay live. A `site-setting`
+single type supplies the masthead tagline, nav links, subscribe label, and
+footer text; when it is absent the frontend falls back to hardcoded copy.
+
+Because the masthead and category bar are in the root layout, the
+`site-settings` and `categories` cache tags are attached to every route:
+editing either revalidates the whole site.
 
 ### Subscriptions
 

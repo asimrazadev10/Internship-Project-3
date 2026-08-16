@@ -43,6 +43,28 @@
       "relation": "manyToMany",
       "target": "api::category.category",
       "inversedBy": "articles"
+    },
+    "body": {
+      "type": "dynamiczone",
+      "components": [
+        "blocks.rich-text",
+        "blocks.pull-quote",
+        "blocks.callout",
+        "blocks.code"
+      ]
+    },
+    "seo": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.seo"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "kicker": {
+      "type": "enumeration",
+      "enum": ["analysis", "opinion", "tutorial", "dispatch"]
     }
   }
 }

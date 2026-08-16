@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getArticleBySlug, getArticles, strapiFetch } from '@/lib/strapi';
+import { getArticleBySlug, getArticles, getSiteSettings, strapiFetch } from '@/lib/strapi';
+import { SITE_SETTINGS_TAG } from '@/lib/tags';
 
 const json = (data: unknown, ok = true, status = 200) =>
   Promise.resolve({ ok, status, json: () => Promise.resolve({ data }) } as Response);
@@ -32,6 +33,20 @@ describe('strapiFetch', () => {
     await expect(strapiFetch('/api/things', { tags: [] })).rejects.toThrow(
       'Strapi responded 500 for /api/things',
     );
+  });
+
+  it('returns null on a 404 when allow404 is set', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null, false, 404)));
+
+    expect(await strapiFetch('/api/things', { tags: [], allow404: true })).toBeNull();
+  });
+
+  it('still throws on a non-404 error even when allow404 is set', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null, false, 500)));
+
+    await expect(
+      strapiFetch('/api/things', { tags: [], allow404: true }),
+    ).rejects.toThrow('Strapi responded 500 for /api/things');
   });
 
   it('falls back to 60 when REVALIDATE_WINDOW is not a valid number', async () => {
@@ -76,5 +91,59 @@ describe('queries', () => {
     await getArticles();
 
     expect(fetchMock.mock.calls[0][0]).toContain('sort=publishedAt:desc');
+  });
+});
+
+describe('populate', () => {
+  it('getArticles does not populate body or seo, which no list caller renders', async () => {
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getArticles();
+
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).not.toContain('populate[body]');
+    expect(url).not.toContain('populate[seo]');
+  });
+
+  it('getArticleBySlug populates dynamic-zone components explicitly, not with a wildcard', async () => {
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getArticleBySlug('a-post');
+
+    const url = fetchMock.mock.calls[0][0] as string;
+    // populate=* does not reach fields inside dynamic-zone components, so the
+    // nested form is required. A wildcard here returns 200 with empty blocks.
+    expect(url).toContain('populate[body][populate]=*');
+    expect(url).toContain('populate[seo]=*');
+  });
+});
+
+describe('getSiteSettings', () => {
+  it('returns the single type and tags it', async () => {
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) =>
+      json({ id: 1, tagline: 'Honest.' }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const settings = await getSiteSettings();
+
+    expect(settings?.tagline).toBe('Honest.');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain('/api/site-setting');
+    expect((init as { next: { tags: string[] } }).next.tags).toEqual([SITE_SETTINGS_TAG]);
+  });
+
+  it('returns null when the single type has no entry yet', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null)));
+
+    expect(await getSiteSettings()).toBeNull();
+  });
+
+  it('returns null when the single type has not been seeded (404)', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null, false, 404)));
+
+    expect(await getSiteSettings()).toBeNull();
   });
 });

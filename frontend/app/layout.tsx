@@ -3,7 +3,7 @@ import { Archivo_Narrow, Spectral } from 'next/font/google';
 import { CategoryBar } from '@/components/CategoryBar';
 import { Masthead } from '@/components/Masthead';
 import { RenderStamp } from '@/components/RenderStamp';
-import { getCategories } from '@/lib/strapi';
+import { getCategories, getSiteSettings } from '@/lib/strapi';
 import './globals.css';
 
 const archivo = Archivo_Narrow({
@@ -24,22 +24,22 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Runs on every route, since the category bar renders on every page. That
-  // means the `categories` tag ends up attached to every route: any category
-  // create/update/delete revalidates the whole site, not just category pages.
-  // Defensible given the category bar is always visible, but worth knowing.
-  const categories = await getCategories();
+  // Both fetches run on every route because the masthead and category bar are
+  // in the layout. That attaches BOTH the `categories` and `site-settings`
+  // tags to every route: editing either invalidates the whole site. Correct —
+  // they are on every page — but it is the widest invalidation we have.
+  const [categories, settings] = await Promise.all([getCategories(), getSiteSettings()]);
 
   return (
     <html lang="en" className={`${archivo.variable} ${spectral.variable}`}>
       <body>
-        <Masthead />
+        <Masthead settings={settings} />
         <CategoryBar categories={categories} />
         <main className="mx-auto max-w-6xl px-5 py-10">{children}</main>
         <footer className="mt-16 border-t border-rule">
           <div className="mx-auto flex max-w-6xl justify-between px-5 py-6">
             <span className="font-display text-xs uppercase tracking-widest">
-              The Strapi Press
+              {settings?.footerText || 'The Strapi Press'}
             </span>
             <RenderStamp />
           </div>

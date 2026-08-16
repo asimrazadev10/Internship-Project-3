@@ -1,12 +1,13 @@
 import { ArticleCard } from '@/components/ArticleCard';
 import { HeroArticle } from '@/components/HeroArticle';
+import { pickHero } from '@/lib/hero';
 import { getArticles } from '@/lib/strapi';
 
 export const revalidate = 60;
 
 export default async function Home() {
   const articles = await getArticles();
-  const [hero, ...rest] = articles;
+  const { hero, rest } = pickHero(articles);
 
   if (!hero) {
     return <p className="font-display uppercase tracking-widest">No articles published yet.</p>;

@@ -1,5 +1,11 @@
 import type { Core } from '@strapi/strapi';
-import { grantPublicReadAccess, registerIsrWebhook, seedBlog } from './seed';
+import {
+  enrichExistingArticles,
+  grantPublicReadAccess,
+  registerIsrWebhook,
+  seedBlog,
+  seedSiteSettings,
+} from './seed';
 
 export default {
   /**
@@ -19,6 +25,8 @@ export default {
    */
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     await seedBlog(strapi);
+    await enrichExistingArticles(strapi);
+    await seedSiteSettings(strapi);
     await grantPublicReadAccess(strapi);
     await registerIsrWebhook(strapi);
   },

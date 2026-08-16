@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { ARTICLES_TAG, CATEGORIES_TAG, articleTag, categoryTag } from '@/lib/tags';
+import { ARTICLES_TAG, CATEGORIES_TAG, SITE_SETTINGS_TAG, articleTag, categoryTag } from '@/lib/tags';
 
 describe('cache tags', () => {
   it('names the list tags', () => {
     expect(ARTICLES_TAG).toBe('articles');
     expect(CATEGORIES_TAG).toBe('categories');
+  });
+
+  it('names the site settings tag', () => {
+    expect(SITE_SETTINGS_TAG).toBe('site-settings');
   });
 
   it('namespaces per-entity tags by slug', () => {
