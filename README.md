@@ -83,3 +83,41 @@ Verification:
 ./scripts/verify-blog-api.sh      # content model and permissions
 ./scripts/verify-isr.sh           # builds the frontend and checks ISR behavior
 ```
+
+### Subscriptions
+
+The masthead's SUBSCRIBE button posts to `/api/checkout`, which creates a Stripe
+Checkout Session and redirects to Stripe's hosted page. Hosted Checkout needs no
+publishable key and no client-side JavaScript, so the button is a plain form POST
+and the blog's static rendering is unaffected.
+
+Set up test mode:
+
+```bash
+cd frontend
+cp .env.example .env.local          # then paste your sk_test_... key
+# stripe is a separate binary, not an npm package — install it from
+# https://docs.stripe.com/stripe-cli
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+# copy the whsec_... it prints into STRIPE_WEBHOOK_SECRET in .env.local
+npm run dev
+```
+
+Click SUBSCRIBE and pay with a Stripe test card:
+
+| Card | Result |
+|---|---|
+| `4242 4242 4242 4242` | succeeds |
+| `4000 0025 0000 3155` | requires 3D Secure authentication |
+| `4000 0000 0000 9995` | declined, insufficient funds |
+
+Any future expiry date, any three-digit CVC, any postcode.
+
+With no Stripe keys set the site runs normally and `/api/checkout` returns 503.
+
+Verification:
+
+```bash
+./scripts/verify-stripe.sh                              # unconfigured-case checks
+STRIPE_SECRET_KEY=sk_test_... ./scripts/verify-stripe.sh # also creates a real Session
+```
