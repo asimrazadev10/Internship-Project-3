@@ -59,3 +59,27 @@ Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/
 ---
 
 <sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+
+## Frontend
+
+A Next.js App Router frontend lives in `frontend/`. It renders the blog as a
+newspaper and demonstrates Incremental Static Regeneration end to end.
+
+```bash
+./scripts/restart-dev.sh          # Strapi on :1337
+cd frontend && npm install
+cp .env.example .env.local        # secret must match the repo-root .env
+npm run dev                       # Next on :3000
+```
+
+Pages are prerendered and revalidate every 60 seconds. Strapi also registers a
+`nextjs-isr` webhook on bootstrap that POSTs to `/api/revalidate`, so editing an
+article in the admin UI makes the change live within a second or two. The
+footer's "Rendered …" stamp shows when the page was last generated.
+
+Verification:
+
+```bash
+./scripts/verify-blog-api.sh      # content model and permissions
+./scripts/verify-isr.sh           # builds the frontend and checks ISR behavior
+```
