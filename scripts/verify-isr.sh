@@ -12,6 +12,7 @@ SECRET="${REVALIDATE_SECRET:-dev-secret-change-me}"
 HERO_SLUG="css-has-quietly-become-a-good-language"
 OTHER_SLUG="why-your-database-schema-is-your-real-api"
 fail=0
+server_pgid=""
 
 check() {
   local label="$1" actual="$2" expected="$3"
@@ -32,10 +33,15 @@ stamp() {
 cleanup() {
   # `npm run start` forks `next start`, which in turn forks the actual
   # next-server listener; killing only the top pid leaves next-server
-  # running, so sweep every process in the chain by pattern.
-  pkill -f "npm run start" >/dev/null 2>&1
-  pkill -f "next start" >/dev/null 2>&1
-  pkill -f "next-server" >/dev/null 2>&1
+  # running. Rather than pattern-matching process names (which can hit
+  # unrelated processes on the machine, including other projects'
+  # `npm run start` or a shell whose command line merely contains that
+  # text), the server was launched in its own process group below, so
+  # signal the whole group by its negated pgid. This is a no-op if the
+  # server was never started.
+  if [ -n "$server_pgid" ]; then
+    kill -TERM -"$server_pgid" >/dev/null 2>&1
+  fi
 }
 trap cleanup EXIT
 
@@ -50,7 +56,11 @@ if ! (cd "$ROOT/frontend" && npm run build > "$LOG" 2>&1); then
   exit 1
 fi
 
-(cd "$ROOT/frontend" && nohup npm run start >> "$LOG" 2>&1 &)
+(
+  cd "$ROOT/frontend" || exit 1
+  exec setsid npm run start >> "$LOG" 2>&1
+) &
+server_pgid=$!
 for _ in $(seq 1 60); do
   if [ "$(curl -s -o /dev/null -w '%{http_code}' "$WEB/")" = "200" ]; then
     break
@@ -95,9 +105,12 @@ revalidated=$(curl -s -X POST "$WEB/api/revalidate" \
 echo "  note  revalidate response: $revalidated"
 
 # Next may serve one stale response while regenerating, so poll briefly.
+# An empty stamp (a failed curl) must not count as "changed" - only a real,
+# different, non-empty stamp proves the page actually re-rendered.
 changed="no"
 for _ in $(seq 1 10); do
-  if [ "$(stamp "/articles/$HERO_SLUG")" != "$first" ]; then
+  polled="$(stamp "/articles/$HERO_SLUG")"
+  if [ -n "$polled" ] && [ "$polled" != "$first" ]; then
     changed="yes"
     break
   fi
@@ -105,8 +118,10 @@ for _ in $(seq 1 10); do
 done
 check "webhook regenerates the article page" "$changed" "yes"
 
+# Both stamps must be real (non-empty) and equal - if either curl failed,
+# this must not pass vacuously on two empty strings.
 other_after=$(stamp "/articles/$OTHER_SLUG")
-if [ "$other_before" = "$other_after" ]; then
+if [ -n "$other_before" ] && [ -n "$other_after" ] && [ "$other_before" = "$other_after" ]; then
   check "other articles are left cached" "untouched" "untouched"
 else
   check "other articles are left cached" "regenerated" "untouched"
