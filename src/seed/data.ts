@@ -69,4 +69,5 @@ export const PUBLIC_READ_ACTIONS = [
   'api::author.author.findOne',
   'api::category.category.find',
   'api::category.category.findOne',
+  'api::site-setting.site-setting.find',
 ];

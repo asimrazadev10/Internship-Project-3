@@ -1,0 +1,14 @@
+{
+  "collectionName": "components_blocks_codes",
+  "info": { "displayName": "Code", "icon": "code" },
+  "options": {},
+  "attributes": {
+    "code": { "type": "text", "required": true },
+    "language": {
+      "type": "enumeration",
+      "enum": ["ts", "js", "bash", "json", "css"],
+      "default": "ts"
+    },
+    "showLineNumbers": { "type": "boolean", "default": false }
+  }
+}
