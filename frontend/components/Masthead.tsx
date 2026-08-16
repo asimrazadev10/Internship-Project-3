@@ -11,7 +11,14 @@ export function Masthead() {
         </Link>
         <nav className="font-display flex items-center gap-6 text-sm uppercase tracking-widest">
           <Link href="/" className="hover:text-accent">Home</Link>
-          <span className="cursor-default text-accent">Subscribe</span>
+          <form action="/api/checkout" method="POST">
+            <button
+              type="submit"
+              className="cursor-pointer uppercase tracking-widest text-accent hover:underline"
+            >
+              Subscribe
+            </button>
+          </form>
         </nav>
       </div>
     </header>
