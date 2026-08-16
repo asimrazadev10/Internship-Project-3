@@ -24,6 +24,10 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Runs on every route, since the category bar renders on every page. That
+  // means the `categories` tag ends up attached to every route: any category
+  // create/update/delete revalidates the whole site, not just category pages.
+  // Defensible given the category bar is always visible, but worth knowing.
   const categories = await getCategories();
 
   return (

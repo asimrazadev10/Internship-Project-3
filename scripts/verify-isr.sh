@@ -78,6 +78,8 @@ check "GET unknown article is 404" \
   "$(curl -s -o /dev/null -w '%{http_code}' "$WEB/articles/does-not-exist")" "404"
 check "GET /categories/engineering status" \
   "$(curl -s -o /dev/null -w '%{http_code}' "$WEB/categories/engineering")" "200"
+check "GET /articles/<other slug> status" \
+  "$(curl -s -o /dev/null -w '%{http_code}' "$WEB/articles/$OTHER_SLUG")" "200"
 
 # A prerendered page serves the same stamp on repeat requests.
 first=$(stamp "/articles/$HERO_SLUG")

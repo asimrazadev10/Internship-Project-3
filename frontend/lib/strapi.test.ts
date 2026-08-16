@@ -33,6 +33,17 @@ describe('strapiFetch', () => {
       'Strapi responded 500 for /api/things',
     );
   });
+
+  it('falls back to 60 when REVALIDATE_WINDOW is not a valid number', async () => {
+    process.env.REVALIDATE_WINDOW = 'not-a-number';
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await strapiFetch('/api/things', { tags: [] });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init as { next: { revalidate: number } }).next.revalidate).toBe(60);
+  });
 });
 
 describe('queries', () => {

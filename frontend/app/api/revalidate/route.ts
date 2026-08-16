@@ -14,7 +14,10 @@ export function tagsFor(model: string, slug?: string | null): string[] {
       return slug ? [ARTICLES_TAG, articleTag(slug)] : [ARTICLES_TAG];
     case 'category':
       return slug ? [CATEGORIES_TAG, categoryTag(slug)] : [CATEGORIES_TAG];
-    // A renamed author changes the byline on every list and detail page.
+    // A renamed author changes the byline shown on lists. Returning only
+    // ARTICLES_TAG refreshes those immediately; it does not reach
+    // /articles/[slug], which is tagged article:<slug> only, so a detail
+    // page's byline heals within the REVALIDATE_WINDOW (60s) instead.
     case 'author':
       return [ARTICLES_TAG];
     default:

@@ -2,7 +2,10 @@ import { ARTICLES_TAG, CATEGORIES_TAG, articleTag, categoryTag } from '@/lib/tag
 import type { Article, Category } from '@/lib/types';
 
 const baseUrl = () => process.env.STRAPI_URL ?? 'http://localhost:1337';
-const revalidateWindow = () => Number(process.env.REVALIDATE_WINDOW ?? 60);
+const revalidateWindow = () => {
+  const parsed = Number(process.env.REVALIDATE_WINDOW ?? 60);
+  return Number.isFinite(parsed) ? parsed : 60;
+};
 
 /**
  * The only function that knows Strapi's URL and response envelope. Callers get
@@ -47,7 +50,11 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
   const matches = await strapiFetch<Category[]>(
     `/api/categories?filters[slug][$eq]=${encodeURIComponent(slug)}` +
       '&populate[articles][populate][author]=true',
-    { tags: [CATEGORIES_TAG, categoryTag(slug)] },
+    // Also tagged `articles`: this page renders each article's title, excerpt,
+    // and byline via ArticleCard, but an article edit only revalidates
+    // `articles` and `article:<slug>` — without this tag the category page
+    // would stay stale for up to REVALIDATE_WINDOW seconds after such an edit.
+    { tags: [CATEGORIES_TAG, categoryTag(slug), ARTICLES_TAG] },
   );
   return matches[0] ?? null;
 }
