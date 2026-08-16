@@ -35,6 +35,20 @@ describe('strapiFetch', () => {
     );
   });
 
+  it('returns null on a 404 when allow404 is set', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null, false, 404)));
+
+    expect(await strapiFetch('/api/things', { tags: [], allow404: true })).toBeNull();
+  });
+
+  it('still throws on a non-404 error even when allow404 is set', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null, false, 500)));
+
+    await expect(
+      strapiFetch('/api/things', { tags: [], allow404: true }),
+    ).rejects.toThrow('Strapi responded 500 for /api/things');
+  });
+
   it('falls back to 60 when REVALIDATE_WINDOW is not a valid number', async () => {
     process.env.REVALIDATE_WINDOW = 'not-a-number';
     const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));

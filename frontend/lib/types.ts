@@ -28,7 +28,7 @@ export interface Article {
   categories?: Category[];
   body?: Block[];
   seo?: Seo | null;
-  featured?: boolean;
+  featured?: boolean | null;
   kicker?: string | null;
 }
 

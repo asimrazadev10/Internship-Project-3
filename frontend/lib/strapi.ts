@@ -11,11 +11,25 @@ const revalidateWindow = () => {
  * The only function that knows Strapi's URL and response envelope. Callers get
  * plain typed objects and never see `{ data, meta }`.
  */
-export async function strapiFetch<T>(path: string, { tags }: { tags: string[] }): Promise<T> {
+export async function strapiFetch<T>(
+  path: string,
+  { tags, allow404 = false }: { tags: string[]; allow404?: boolean },
+): Promise<T> {
   const response = await fetch(`${baseUrl()}${path}`, {
     headers: { Accept: 'application/json' },
     next: { tags, revalidate: revalidateWindow() },
   });
+
+  // A single type with no entry ever created returns 404, not 200 with
+  // `data: null` — unlike a collection type, which just returns an empty
+  // array. `allow404` is opt-in per caller: Site Settings must survive a
+  // fresh, unseeded database (the root layout calls getSiteSettings on
+  // every page) and fall back to hardcoded copy, so it treats 404 as "not
+  // configured" rather than an error. Every other caller, and every other
+  // non-2xx status even with allow404 set, still throws below.
+  if (allow404 && response.status === 404) {
+    return null as T;
+  }
 
   if (!response.ok) {
     throw new Error(`Strapi responded ${response.status} for ${path}`);
@@ -57,33 +71,15 @@ export function getCategories(): Promise<Category[]> {
 
 /**
  * A single type returns one object rather than an array, and returns null
- * before its first entry exists — a fresh database, before seeding.
- *
- * Unlike a truly empty single type (200, `data: null`), an UNSEEDED single
- * type returns HTTP 404 with `data: null`. strapiFetch throws on any
- * non-2xx status, which would crash every page that depends on this query
- * (the root layout calls it) on a database that hasn't been seeded yet.
- * A missing Site Settings entry must fall back to hardcoded copy instead,
- * so this query alone tolerates a 404 as "not configured" and returns
- * null; every other non-2xx still throws via strapiFetch.
+ * before its first entry exists — a fresh database, before seeding. See the
+ * `allow404` comment in strapiFetch for why this query tolerates a 404.
  */
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const path = '/api/site-setting?populate[navLinks]=*';
-  const response = await fetch(`${baseUrl()}${path}`, {
-    headers: { Accept: 'application/json' },
-    next: { tags: [SITE_SETTINGS_TAG], revalidate: revalidateWindow() },
-  });
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`Strapi responded ${response.status} for ${path}`);
-  }
-
-  const body = (await response.json()) as { data: SiteSettings | null };
-  return body.data ?? null;
+  const settings = await strapiFetch<SiteSettings | null>(
+    '/api/site-setting?populate[navLinks]=*',
+    { tags: [SITE_SETTINGS_TAG], allow404: true },
+  );
+  return settings ?? null;
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
