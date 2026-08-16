@@ -96,7 +96,9 @@ Set up test mode:
 ```bash
 cd frontend
 cp .env.example .env.local          # then paste your sk_test_... key
-npx stripe listen --forward-to localhost:3000/api/stripe/webhook
+# stripe is a separate binary, not an npm package — install it from
+# https://docs.stripe.com/stripe-cli
+stripe listen --forward-to localhost:3000/api/stripe/webhook
 # copy the whsec_... it prints into STRIPE_WEBHOOK_SECRET in .env.local
 npm run dev
 ```

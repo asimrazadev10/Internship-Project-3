@@ -153,14 +153,18 @@ Errors:
 
 ### `POST /api/stripe/webhook`
 
-1. Read the raw body with `await request.text()`. Parsing the JSON first would
+1. Reject a request whose `Content-Length` exceeds 1 MB (1,048,576 bytes) with
+   `413`, before reading the body. Real Stripe events are kilobytes, so this
+   cannot reject legitimate traffic; it bounds the unauthenticated buffering
+   the next step does.
+2. Read the raw body with `await request.text()`. Parsing the JSON first would
    change the bytes and break verification, so the raw string is read before
    anything else touches the body.
-2. `stripe.webhooks.constructEvent(rawBody, signatureHeader, STRIPE_WEBHOOK_SECRET)`.
-3. Any missing or invalid signature → `400`, and nothing else happens.
-4. `checkout.session.completed` → log the session id, `payment_status`, and
+3. `stripe.webhooks.constructEvent(rawBody, signatureHeader, STRIPE_WEBHOOK_SECRET)`.
+4. Any missing or invalid signature → `400`, and nothing else happens.
+5. `checkout.session.completed` → log the session id, `payment_status`, and
    customer email at info level. Every other event type → `200` and no action.
-5. Respond `{ received: true }`.
+6. Respond `{ received: true }`.
 
 `STRIPE_WEBHOOK_SECRET` unset is treated as a verification failure: `400`, never
 a bypass. A webhook endpoint that accepts unverified payloads when
@@ -191,9 +195,13 @@ needed for this integration at all.
 | `SUBSCRIPTION_PRICE_CENTS` | `800` | Amount in the smallest currency unit. |
 | `SUBSCRIPTION_CURRENCY` | `usd` | ISO currency code, lowercase. |
 
-`frontend/.env.example` gains all five with placeholder values and a comment
-that real keys belong in the gitignored `.env.local`. No real key is ever
-committed, logged, or included in a response body.
+`frontend/.env.example` gains all five. `SITE_URL`, `SUBSCRIPTION_PRICE_CENTS`,
+and `SUBSCRIPTION_CURRENCY` ship with real default values. `STRIPE_SECRET_KEY`
+and `STRIPE_WEBHOOK_SECRET` are left empty, with a comment that real keys
+belong in the gitignored `.env.local` — an unedited copy of the example file
+must exercise the documented "not configured" behavior (503, not a Stripe API
+error from a fake key). No real key is ever committed, logged, or included in
+a response body.
 
 ## Visual Design
 
@@ -233,7 +241,9 @@ identifier from the request — at that point it needs an origin check.
   import time.
 - Webhook route with a mocked Stripe: a bad signature returns `400`, a valid
   `checkout.session.completed` returns `200`, an unhandled event type returns
-  `200` without acting, and a missing `STRIPE_WEBHOOK_SECRET` returns `400`.
+  `200` without acting, a missing `STRIPE_WEBHOOK_SECRET` returns `400`, an
+  over-limit `Content-Length` returns `413` without calling `constructEvent`,
+  and a normal request under the limit still succeeds.
 - `/api/checkout` with an unset key returns `503`; `GET` returns `405`.
 
 **Script (`scripts/verify-stripe.sh`)**

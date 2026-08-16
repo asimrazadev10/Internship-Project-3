@@ -15,11 +15,14 @@ vi.mock('@/lib/stripe', async () => {
 
 import { POST } from '@/app/api/stripe/webhook/route';
 
-const post = (body: string, signature?: string) =>
+const post = (body: string, signature?: string, extraHeaders?: Record<string, string>) =>
   POST(
     new Request('http://localhost:3000/api/stripe/webhook', {
       method: 'POST',
-      headers: signature ? { 'stripe-signature': signature } : {},
+      headers: {
+        ...(signature ? { 'stripe-signature': signature } : {}),
+        ...extraHeaders,
+      },
       body,
     }),
   );
@@ -100,5 +103,20 @@ describe('POST /api/stripe/webhook', () => {
 
     expect(response.status).toBe(200);
     expect(info).not.toHaveBeenCalled();
+  });
+
+  it('rejects an over-limit Content-Length before reading or verifying the body', async () => {
+    const response = await post('{}', 'sig', { 'content-length': String(1_048_577) });
+
+    expect(response.status).toBe(413);
+    expect(constructEvent).not.toHaveBeenCalled();
+  });
+
+  it('still succeeds for a normal request with Content-Length under the limit', async () => {
+    constructEvent.mockReturnValue({ type: 'invoice.paid', data: { object: {} } });
+
+    const response = await post('{}', 'sig', { 'content-length': '2' });
+
+    expect(response.status).toBe(200);
   });
 });

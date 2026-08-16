@@ -4,6 +4,13 @@ import { MissingStripeKeyError, getStripe } from '@/lib/stripe';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Real Stripe events are a few KB at most. This bounds the buffering done by
+// `request.text()` below, which happens before signature verification and is
+// therefore reachable by anyone, not just Stripe. The guard cannot move after
+// the read: by the time the body is read, the unbounded buffering it exists
+// to prevent has already happened.
+const MAX_BODY_BYTES = 1_048_576; // 1 MB
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -13,6 +20,11 @@ const json = (body: unknown, status = 200) =>
 export async function POST(request: Request): Promise<Response> {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   const signature = request.headers.get('stripe-signature');
+
+  const contentLength = Number(request.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    return json({ error: 'payload too large' }, 413);
+  }
 
   // Read the body as raw text before anything parses it: constructEvent hashes
   // these exact bytes, so a round trip through JSON.parse would break
