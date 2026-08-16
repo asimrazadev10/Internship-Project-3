@@ -104,6 +104,7 @@ describe('populate', () => {
     const url = fetchMock.mock.calls[0][0] as string;
     expect(url).not.toContain('populate[body]');
     expect(url).not.toContain('populate[seo]');
+    expect(url).toContain('populate[cover]');
   });
 
   it('getArticleBySlug populates dynamic-zone components explicitly, not with a wildcard', async () => {

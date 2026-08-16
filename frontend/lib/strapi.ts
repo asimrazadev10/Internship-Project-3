@@ -44,6 +44,11 @@ export async function strapiFetch<T>(
 // attempts to deep-populate its own relations/media, which the author and
 // category schemas don't support at that depth. `=true` populates the
 // relation itself (shallow) without recursing, which is all callers need.
+// The author's avatar needs one level deeper: `populate[author]=true` and
+// `populate[author][populate][avatar]=true` both target the same key and
+// combining them 400s ("Invalid nested populate. Expected '*' or an
+// object"), so the nested form replaces the plain one — it still returns the
+// author's own scalar fields alongside the avatar.
 // Deliberately does not populate `body` or `seo`: none of its callers (the
 // home page, generateStaticParams, the category page) render either, and
 // `body` in particular can carry a full article's rich-text content. Every
@@ -52,7 +57,9 @@ export async function strapiFetch<T>(
 // them.
 export function getArticles(): Promise<Article[]> {
   return strapiFetch<Article[]>(
-    '/api/articles?populate[author]=true&populate[categories]=true&sort=publishedAt:desc',
+    '/api/articles?populate[author][populate][avatar]=true&populate[categories]=true' +
+      '&populate[cover]=true' +
+      '&sort=publishedAt:desc',
     { tags: [ARTICLES_TAG] },
   );
 }
@@ -61,7 +68,8 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
   const matches = await strapiFetch<Article[]>(
     `/api/articles?filters[slug][$eq]=${encodeURIComponent(slug)}` +
       '&populate[body][populate]=*&populate[seo]=*' +
-      '&populate[author]=true&populate[categories]=true',
+      '&populate[author][populate][avatar]=true&populate[categories]=true' +
+      '&populate[cover]=true',
     // Deliberately not tagged `articles`: a detail page must survive an edit to
     // a different article. The revalidate route invalidates both tags on an
     // edit, which reaches the lists and this page but no sibling pages.
@@ -90,7 +98,8 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const matches = await strapiFetch<Category[]>(
     `/api/categories?filters[slug][$eq]=${encodeURIComponent(slug)}` +
-      '&populate[articles][populate][author]=true',
+      '&populate[articles][populate][author]=true' +
+      '&populate[articles][populate][cover]=true',
     // Also tagged `articles`: this page renders each article's title, excerpt,
     // and byline via ArticleCard, but an article edit only revalidates
     // `articles` and `article:<slug>` — without this tag the category page
