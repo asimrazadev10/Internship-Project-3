@@ -1,4 +1,6 @@
+import Image from 'next/image';
 import { Prose } from '@/components/Prose';
+import { imageAlt, imageUrl } from '@/lib/media';
 import type { Block } from '@/lib/types';
 
 const KNOWN: Record<string, string> = {
@@ -6,6 +8,7 @@ const KNOWN: Record<string, string> = {
   'blocks.pull-quote': 'pull-quote',
   'blocks.callout': 'callout',
   'blocks.code': 'code',
+  'blocks.image': 'image',
 };
 
 /** Stable React key, and the test for whether this block can be rendered. */
@@ -75,6 +78,32 @@ export function Blocks({ blocks }: { blocks: Block[] }) {
             return (
               <CodeBlock key={key} code={block.code} showLineNumbers={block.showLineNumbers} />
             );
+          case 'blocks.image': {
+            const src = imageUrl(block.image);
+            if (!src) {
+              console.warn('[blocks] image block has no populated media, skipping');
+              return null;
+            }
+            return (
+              <figure key={key} className="mt-10">
+                <div className="relative aspect-[16/9] w-full overflow-hidden border border-rule">
+                  <Image
+                    src={src}
+                    alt={imageAlt(block.image, block.caption ?? 'Article image')}
+                    fill
+                    sizes="(max-width: 680px) 100vw, 68ch"
+                    className="object-cover"
+                  />
+                </div>
+                {block.caption && <figcaption className="mt-3 text-base">{block.caption}</figcaption>}
+                {block.credit && (
+                  <p className="font-display mt-1 text-xs uppercase tracking-widest text-accent">
+                    {block.credit}
+                  </p>
+                )}
+              </figure>
+            );
+          }
         }
       })}
     </div>

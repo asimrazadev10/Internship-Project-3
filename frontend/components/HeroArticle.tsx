@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Byline } from '@/components/Byline';
+import { CoverImage } from '@/components/CoverImage';
 import type { Article } from '@/lib/types';
 
 export function HeroArticle({ article }: { article: Article }) {
@@ -18,6 +19,12 @@ export function HeroArticle({ article }: { article: Article }) {
           {article.title}
         </h1>
       </Link>
+      <CoverImage
+        media={article.cover}
+        alt={article.title}
+        priority
+        sizes="(max-width: 1024px) 100vw, 66vw"
+      />
       {article.excerpt && <p className="mt-5 max-w-2xl text-xl">{article.excerpt}</p>}
       <div className="mt-4">
         <Byline author={article.author} date={article.publishedAt} />

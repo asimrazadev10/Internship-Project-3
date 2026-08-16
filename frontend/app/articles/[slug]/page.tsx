@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Blocks } from '@/components/Blocks';
 import { Byline } from '@/components/Byline';
 import { CategoryPills } from '@/components/CategoryPills';
+import { CoverImage } from '@/components/CoverImage';
 import { Prose } from '@/components/Prose';
 import { getArticleBySlug, getArticles } from '@/lib/strapi';
 
@@ -53,6 +54,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <div className="mt-5 border-b border-rule pb-5">
         <Byline author={article.author} date={article.publishedAt} />
       </div>
+      <CoverImage
+        media={article.cover}
+        alt={article.title}
+        priority
+        sizes="(max-width: 680px) 100vw, 68ch"
+      />
       {article.body && article.body.length > 0 ? (
         <Blocks blocks={article.body} />
       ) : (

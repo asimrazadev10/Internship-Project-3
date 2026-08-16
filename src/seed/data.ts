@@ -97,6 +97,12 @@ export const DEMO_BODY = [
     language: 'ts',
     showLineNumbers: true,
   },
+  {
+    __component: 'blocks.image',
+    file: 'figure-components.jpg',
+    caption: 'A component is defined once and reused across content types.',
+    credit: 'Lorem Picsum',
+  },
 ];
 
 // Applied only where the field is currently empty.
@@ -132,4 +138,37 @@ export const SITE_SETTINGS = {
     { label: 'Home', href: '/' },
     { label: 'Engineering', href: '/categories/engineering' },
   ],
+};
+
+/** Files in assets/media/, uploaded on bootstrap. Alt text is set at upload. */
+export const MEDIA = [
+  { file: 'cover-schema.jpg', alt: 'Abstract photograph standing in for a database schema article' },
+  { file: 'cover-modeling.jpg', alt: 'Abstract photograph standing in for a content modeling article' },
+  { file: 'cover-css.jpg', alt: 'Abstract photograph standing in for an article about CSS' },
+  { file: 'figure-components.jpg', alt: 'Photograph illustrating reusable components' },
+  { file: 'avatar-1.jpg', alt: 'Portrait of the author' },
+  { file: 'avatar-2.jpg', alt: 'Portrait of the author' },
+];
+
+/** Which uploaded file becomes which entry's cover. */
+export const ARTICLE_COVERS: Record<string, string> = {
+  'why-your-database-schema-is-your-real-api': 'cover-schema.jpg',
+  'practical-guide-to-content-modeling': 'cover-modeling.jpg',
+  'css-has-quietly-become-a-good-language': 'cover-css.jpg',
+  // 'build-a-blog-frontend-in-an-afternoon' is deliberately left coverless.
+};
+
+/**
+ * Which uploaded file becomes which author's avatar, keyed by email.
+ *
+ * These are the seed emails from AUTHORS above — the only authors this
+ * codebase deterministically creates (in seedBlog), and so the only ones a
+ * fresh database, CI run, or another developer's clone will ever have. A
+ * database that was hand-edited to rename authors and change their emails
+ * (as this developer's local database was) will not match these keys; see
+ * the position-based fallback in seedMedia's author loop for that case.
+ */
+export const AUTHOR_AVATARS: Record<string, string> = {
+  'ada@example.com': 'avatar-1.jpg',
+  'milo@example.com': 'avatar-2.jpg',
 };

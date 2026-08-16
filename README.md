@@ -83,6 +83,7 @@ Verification:
 ./scripts/verify-blog-api.sh      # content model and permissions
 ./scripts/verify-isr.sh           # builds the frontend and checks ISR behavior
 ./scripts/verify-content-model.sh  # components, dynamic zone, and single type
+./scripts/verify-media.sh         # uploads, derivatives, and image links
 ```
 
 ### Content model
@@ -96,6 +97,21 @@ footer text; when it is absent the frontend falls back to hardcoded copy.
 Because the masthead and category bar are in the root layout, the
 `site-settings` and `categories` cache tags are attached to every route:
 editing either revalidates the whole site.
+
+### Media
+
+Six demo photographs live in `assets/media/`, committed so that seeding works
+offline and every clone gets identical content. `./scripts/fetch-media.sh`
+re-downloads them from Lorem Picsum by fixed ID; `assets/media/MANIFEST.md`
+records each file's source and licence.
+
+Bootstrap uploads them through Strapi, which generates thumbnail, small, medium
+and large derivatives via sharp. Three of the four articles get a cover — the
+fourth is deliberately coverless so the no-image layout stays exercised — and
+both authors get an avatar.
+
+Uploaded files land in `public/uploads/`, which is gitignored: those are
+generated, `assets/media/` is source.
 
 ### Subscriptions
 

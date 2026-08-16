@@ -5,6 +5,7 @@ export interface Author {
   name: string;
   email: string;
   bio: string | null;
+  avatar?: StrapiImage | null;
 }
 
 export interface Category {
@@ -30,6 +31,7 @@ export interface Article {
   seo?: Seo | null;
   featured?: boolean | null;
   kicker?: string | null;
+  cover?: StrapiImage | null;
 }
 
 /** Strapi tags each dynamic-zone entry with its component UID. */
@@ -53,7 +55,29 @@ export type Block =
       code: string;
       language: string;
       showLineNumbers: boolean;
+    }
+  | {
+      __component: 'blocks.image';
+      id: number;
+      image: StrapiImage | null;
+      caption: string | null;
+      credit: string | null;
     };
+
+export interface StrapiImageFormat {
+  url: string;
+  width: number;
+  height: number;
+}
+
+export interface StrapiImage {
+  id: number;
+  url: string;
+  alternativeText: string | null;
+  width: number;
+  height: number;
+  formats?: Record<string, StrapiImageFormat> | null;
+}
 
 export interface Seo {
   id: number;

@@ -50,7 +50,8 @@
         "blocks.rich-text",
         "blocks.pull-quote",
         "blocks.callout",
-        "blocks.code"
+        "blocks.code",
+        "blocks.image"
       ]
     },
     "seo": {

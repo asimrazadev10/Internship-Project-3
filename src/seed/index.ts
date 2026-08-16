@@ -4,6 +4,7 @@ import { ARTICLES, AUTHORS, CATEGORIES, PUBLIC_READ_ACTIONS } from './data';
 export { registerIsrWebhook } from './webhook';
 export { seedSiteSettings } from './site-settings';
 export { enrichExistingArticles } from './enrich';
+export { seedMedia } from './media';
 
 /**
  * Creates sample authors, categories, and published articles.
