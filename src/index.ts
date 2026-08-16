@@ -4,6 +4,7 @@ import {
   grantPublicReadAccess,
   registerIsrWebhook,
   seedBlog,
+  seedMedia,
   seedSiteSettings,
 } from './seed';
 
@@ -25,6 +26,7 @@ export default {
    */
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     await seedBlog(strapi);
+    await seedMedia(strapi);
     await enrichExistingArticles(strapi);
     await seedSiteSettings(strapi);
     await grantPublicReadAccess(strapi);

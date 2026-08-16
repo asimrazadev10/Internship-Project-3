@@ -133,3 +133,33 @@ export const SITE_SETTINGS = {
     { label: 'Engineering', href: '/categories/engineering' },
   ],
 };
+
+/** Files in assets/media/, uploaded on bootstrap. Alt text is set at upload. */
+export const MEDIA = [
+  { file: 'cover-schema.jpg', alt: 'Abstract photograph standing in for a database schema article' },
+  { file: 'cover-modeling.jpg', alt: 'Abstract photograph standing in for a content modeling article' },
+  { file: 'cover-css.jpg', alt: 'Abstract photograph standing in for an article about CSS' },
+  { file: 'figure-components.jpg', alt: 'Photograph illustrating reusable components' },
+  { file: 'avatar-asim.jpg', alt: 'Portrait of Asim Raza' },
+  { file: 'avatar-hassan.jpg', alt: 'Portrait of Hassan' },
+];
+
+/** Which uploaded file becomes which entry's cover. */
+export const ARTICLE_COVERS: Record<string, string> = {
+  'why-your-database-schema-is-your-real-api': 'cover-schema.jpg',
+  'practical-guide-to-content-modeling': 'cover-modeling.jpg',
+  'css-has-quietly-become-a-good-language': 'cover-css.jpg',
+  // 'build-a-blog-frontend-in-an-afternoon' is deliberately left coverless.
+};
+
+/**
+ * Which uploaded file becomes which author's avatar, keyed by email.
+ *
+ * These are NOT the seed emails from AUTHORS above. The live database's
+ * authors were renamed by the user (to "Asim Raza" and "Hassan") with their
+ * own emails, verified against GET /api/authors rather than assumed.
+ */
+export const AUTHOR_AVATARS: Record<string, string> = {
+  'asimraza3533@gmail.com': 'avatar-asim.jpg',
+  'hassan@gmail.com': 'avatar-hassan.jpg',
+};
