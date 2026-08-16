@@ -5,6 +5,11 @@ import type { Article } from '@/lib/types';
 export function HeroArticle({ article }: { article: Article }) {
   return (
     <article className="border-b border-rule pb-10">
+      {article.kicker && (
+        <p className="font-display text-xs uppercase tracking-widest text-accent">
+          {article.kicker}
+        </p>
+      )}
       <Link href={`/articles/${article.slug}`}>
         <h1
           className="uppercase"
