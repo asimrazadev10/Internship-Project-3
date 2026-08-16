@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Byline } from '@/components/Byline';
+import { CoverImage } from '@/components/CoverImage';
 import type { Article } from '@/lib/types';
 
 export function ArticleCard({ article }: { article: Article }) {
@@ -10,6 +11,12 @@ export function ArticleCard({ article }: { article: Article }) {
           {article.kicker}
         </p>
       )}
+      <CoverImage
+        media={article.cover}
+        alt={article.title}
+        format="small"
+        sizes="(max-width: 768px) 100vw, 33vw"
+      />
       <Link href={`/articles/${article.slug}`}>
         <h2 className="text-2xl hover:text-accent">{article.title}</h2>
       </Link>
