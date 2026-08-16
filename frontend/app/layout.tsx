@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <footer className="mt-16 border-t border-rule">
           <div className="mx-auto flex max-w-6xl justify-between px-5 py-6">
             <span className="font-display text-xs uppercase tracking-widest">
-              {settings?.footerText ?? 'The Strapi Press'}
+              {settings?.footerText || 'The Strapi Press'}
             </span>
             <RenderStamp />
           </div>

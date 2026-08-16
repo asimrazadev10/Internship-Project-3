@@ -1,11 +1,11 @@
-export type Block = { type: 'heading' | 'paragraph'; text: string };
+export type ProseNode = { type: 'heading' | 'paragraph'; text: string };
 
 /**
  * The seeded content is markdown limited to `##` headings and paragraphs, so a
  * ten-line parser covers it. Anything else renders as a paragraph rather than
  * pulling in a markdown dependency the content does not need.
  */
-export function parseBlocks(content: string): Block[] {
+export function parseBlocks(content: string): ProseNode[] {
   return content
     .split(/\n{2,}/)
     .map((block) => block.trim())

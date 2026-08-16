@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import type { SiteSettings } from '@/lib/types';
 
-const FALLBACK_NAV = [{ label: 'Home', href: '/' }];
+const FALLBACK_NAV = [{ id: 0, label: 'Home', href: '/' }];
 
 export function Masthead({ settings }: { settings: SiteSettings | null }) {
   // Falls back to the hardcoded copy so a database without site settings —
   // a fresh install before seeding — still renders a complete masthead.
   const navLinks = settings?.navLinks?.length ? settings.navLinks : FALLBACK_NAV;
-  const subscribeLabel = settings?.subscribeLabel ?? 'Subscribe';
+  const subscribeLabel = settings?.subscribeLabel || 'Subscribe';
 
   return (
     <header className="border-b border-rule">
@@ -24,7 +24,7 @@ export function Masthead({ settings }: { settings: SiteSettings | null }) {
         </div>
         <nav className="font-display flex items-center gap-6 text-sm uppercase tracking-widest">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-accent">
+            <Link key={link.id} href={link.href} className="hover:text-accent">
               {link.label}
             </Link>
           ))}

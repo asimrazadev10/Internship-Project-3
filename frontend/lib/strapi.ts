@@ -44,10 +44,15 @@ export async function strapiFetch<T>(
 // attempts to deep-populate its own relations/media, which the author and
 // category schemas don't support at that depth. `=true` populates the
 // relation itself (shallow) without recursing, which is all callers need.
+// Deliberately does not populate `body` or `seo`: none of its callers (the
+// home page, generateStaticParams, the category page) render either, and
+// `body` in particular can carry a full article's rich-text content. Every
+// article list render would otherwise ship that weight over the wire for
+// nothing. `getArticleBySlug` still populates both — the detail page renders
+// them.
 export function getArticles(): Promise<Article[]> {
   return strapiFetch<Article[]>(
-    '/api/articles?populate[body][populate]=*&populate[seo]=*' +
-      '&populate[author]=true&populate[categories]=true&sort=publishedAt:desc',
+    '/api/articles?populate[author]=true&populate[categories]=true&sort=publishedAt:desc',
     { tags: [ARTICLES_TAG] },
   );
 }

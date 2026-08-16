@@ -95,11 +95,22 @@ describe('queries', () => {
 });
 
 describe('populate', () => {
-  it('populates dynamic-zone components explicitly, not with a wildcard', async () => {
+  it('getArticles does not populate body or seo, which no list caller renders', async () => {
     const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));
     vi.stubGlobal('fetch', fetchMock);
 
     await getArticles();
+
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).not.toContain('populate[body]');
+    expect(url).not.toContain('populate[seo]');
+  });
+
+  it('getArticleBySlug populates dynamic-zone components explicitly, not with a wildcard', async () => {
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getArticleBySlug('a-post');
 
     const url = fetchMock.mock.calls[0][0] as string;
     // populate=* does not reach fields inside dynamic-zone components, so the
