@@ -42,6 +42,11 @@ describe('imageUrl', () => {
     expect(imageUrl(image({ formats: null }), 'small')).toBe('http://cms.test/uploads/cover_abc.jpg');
   });
 
+  it('does not double a trailing slash on STRAPI_URL', () => {
+    process.env.STRAPI_URL = 'http://cms.test/';
+    expect(imageUrl(image())).toBe('http://cms.test/uploads/cover_abc.jpg');
+  });
+
   it('passes an already-absolute URL through untouched', () => {
     // A remote provider (S3, Cloudinary) returns absolute URLs; switching to
     // one must need no change here.

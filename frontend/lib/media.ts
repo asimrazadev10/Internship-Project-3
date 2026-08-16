@@ -1,6 +1,9 @@
+import { parseStrapiUrl } from '@/lib/strapi-url';
 import type { StrapiImage } from '@/lib/types';
 
-const baseUrl = () => process.env.STRAPI_URL ?? 'http://localhost:1337';
+// `URL#origin` never carries a trailing slash (even when STRAPI_URL does),
+// so joining it to a `/uploads/…` path can never produce a double slash.
+const baseUrl = () => parseStrapiUrl(process.env.STRAPI_URL ?? 'http://localhost:1337').origin;
 
 /**
  * Resolves a Strapi media URL, optionally picking a generated derivative.

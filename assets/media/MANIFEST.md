@@ -18,8 +18,8 @@ these are source.
 | `cover-modeling.jpg` | https://picsum.photos/id/180/1600/900 | Cover: "A Practical Guide to Content Modeling" |
 | `cover-css.jpg` | https://picsum.photos/id/1073/1600/900 | Cover: "CSS Has Quietly Become a Good Language" |
 | `figure-components.jpg` | https://picsum.photos/id/1050/1600/900 | In-body figure in the content-modeling article |
-| `avatar-asim.jpg` | https://picsum.photos/id/1005/600/600 | Avatar: Asim Raza |
-| `avatar-hassan.jpg` | https://picsum.photos/id/1012/600/600 | Avatar: Hassan |
+| `avatar-1.jpg` | https://picsum.photos/id/1005/600/600 | Author avatar |
+| `avatar-2.jpg` | https://picsum.photos/id/1012/600/600 | Author avatar |
 
 "Build a Blog Frontend Against a REST API in an Afternoon" has no cover on
 purpose, so the coverless layout path is exercised by the seed.

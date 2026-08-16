@@ -146,8 +146,8 @@ export const MEDIA = [
   { file: 'cover-modeling.jpg', alt: 'Abstract photograph standing in for a content modeling article' },
   { file: 'cover-css.jpg', alt: 'Abstract photograph standing in for an article about CSS' },
   { file: 'figure-components.jpg', alt: 'Photograph illustrating reusable components' },
-  { file: 'avatar-asim.jpg', alt: 'Portrait of Asim Raza' },
-  { file: 'avatar-hassan.jpg', alt: 'Portrait of Hassan' },
+  { file: 'avatar-1.jpg', alt: 'Portrait of the author' },
+  { file: 'avatar-2.jpg', alt: 'Portrait of the author' },
 ];
 
 /** Which uploaded file becomes which entry's cover. */
@@ -169,6 +169,6 @@ export const ARTICLE_COVERS: Record<string, string> = {
  * the position-based fallback in seedMedia's author loop for that case.
  */
 export const AUTHOR_AVATARS: Record<string, string> = {
-  'ada@example.com': 'avatar-asim.jpg',
-  'milo@example.com': 'avatar-hassan.jpg',
+  'ada@example.com': 'avatar-1.jpg',
+  'milo@example.com': 'avatar-2.jpg',
 };

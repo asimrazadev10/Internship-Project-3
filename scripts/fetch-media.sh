@@ -17,8 +17,8 @@ cover-schema.jpg|1015|1600|900
 cover-modeling.jpg|180|1600|900
 cover-css.jpg|1073|1600|900
 figure-components.jpg|1050|1600|900
-avatar-asim.jpg|1005|600|600
-avatar-hassan.jpg|1012|600|600
+avatar-1.jpg|1005|600|600
+avatar-2.jpg|1012|600|600
 "
 
 echo "$FILES" | while IFS='|' read -r name id w h; do

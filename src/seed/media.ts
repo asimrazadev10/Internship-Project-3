@@ -13,6 +13,28 @@ interface UploadedFile {
   url: string;
 }
 
+const MIME_TYPES_BY_EXTENSION: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+};
+
+/** Derives a MIME type from the file's extension, so adding a PNG (or any
+ * other supported format) later does not get silently mislabelled as JPEG. */
+function mimetypeFor(file: string): string {
+  const ext = path.extname(file).toLowerCase();
+  const mimetype = MIME_TYPES_BY_EXTENSION[ext];
+
+  if (!mimetype) {
+    throw new Error(`[seed] no known MIME type for media file extension: ${file}`);
+  }
+
+  return mimetype;
+}
+
 /**
  * Uploads a file once and returns its record, reusing an existing upload when
  * one with the same name is already in the Media Library.
@@ -41,7 +63,7 @@ async function uploadOnce(strapi: Core.Strapi, file: string, alt: string): Promi
     files: {
       filepath,
       originalFilename: file,
-      mimetype: 'image/jpeg',
+      mimetype: mimetypeFor(file),
       size: fs.statSync(filepath).size,
     },
   });
