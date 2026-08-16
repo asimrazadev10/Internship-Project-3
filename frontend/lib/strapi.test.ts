@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getArticleBySlug, getArticles, strapiFetch } from '@/lib/strapi';
+import { getArticleBySlug, getArticles, getSiteSettings, strapiFetch } from '@/lib/strapi';
+import { SITE_SETTINGS_TAG } from '@/lib/tags';
 
 const json = (data: unknown, ok = true, status = 200) =>
   Promise.resolve({ ok, status, json: () => Promise.resolve({ data }) } as Response);
@@ -76,5 +77,48 @@ describe('queries', () => {
     await getArticles();
 
     expect(fetchMock.mock.calls[0][0]).toContain('sort=publishedAt:desc');
+  });
+});
+
+describe('populate', () => {
+  it('populates dynamic-zone components explicitly, not with a wildcard', async () => {
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) => json([]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getArticles();
+
+    const url = fetchMock.mock.calls[0][0] as string;
+    // populate=* does not reach fields inside dynamic-zone components, so the
+    // nested form is required. A wildcard here returns 200 with empty blocks.
+    expect(url).toContain('populate[body][populate]=*');
+    expect(url).toContain('populate[seo]=*');
+  });
+});
+
+describe('getSiteSettings', () => {
+  it('returns the single type and tags it', async () => {
+    const fetchMock = vi.fn((_url: string, _init: RequestInit) =>
+      json({ id: 1, tagline: 'Honest.' }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const settings = await getSiteSettings();
+
+    expect(settings?.tagline).toBe('Honest.');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain('/api/site-setting');
+    expect((init as { next: { tags: string[] } }).next.tags).toEqual([SITE_SETTINGS_TAG]);
+  });
+
+  it('returns null when the single type has no entry yet', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null)));
+
+    expect(await getSiteSettings()).toBeNull();
+  });
+
+  it('returns null when the single type has not been seeded (404)', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => json(null, false, 404)));
+
+    expect(await getSiteSettings()).toBeNull();
   });
 });
