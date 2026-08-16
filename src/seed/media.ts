@@ -108,11 +108,36 @@ export async function seedMedia(strapi: Core.Strapi): Promise<void> {
     populate: { avatar: true },
   });
 
-  for (const author of authors) {
-    const wanted = author.email ? AUTHOR_AVATARS[author.email] : undefined;
-    const file = wanted ? files.get(wanted) : undefined;
+  // Avatar files, in MEDIA's declared order, used for the position-based
+  // fallback below.
+  const avatarFiles = MEDIA.filter((entry) => entry.file.startsWith('avatar-')).map((entry) => entry.file);
 
-    if (!file || author.avatar) {
+  for (const [index, author] of authors.entries()) {
+    if (author.avatar) {
+      continue;
+    }
+
+    const mapped = author.email ? AUTHOR_AVATARS[author.email] : undefined;
+    let file = mapped ? files.get(mapped) : undefined;
+
+    // AUTHOR_AVATARS is keyed by the seed emails, which is all a fresh
+    // database ever has. A database whose authors were renamed (as this
+    // developer's local one was) won't match those keys — fall back to the
+    // Nth avatar file by the author's position in this list, so a renamed
+    // author still gets an avatar instead of being silently skipped.
+    if (!file) {
+      const fallbackFile = avatarFiles[index];
+      file = fallbackFile ? files.get(fallbackFile) : undefined;
+
+      if (file) {
+        strapi.log.info(
+          `[seed] no avatar mapping for '${author.email}', falling back to '${fallbackFile}' by position`
+        );
+      }
+    }
+
+    if (!file) {
+      strapi.log.warn(`[seed] no avatar available for '${author.email}'`);
       continue;
     }
 

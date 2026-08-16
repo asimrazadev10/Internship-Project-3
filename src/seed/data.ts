@@ -155,11 +155,14 @@ export const ARTICLE_COVERS: Record<string, string> = {
 /**
  * Which uploaded file becomes which author's avatar, keyed by email.
  *
- * These are NOT the seed emails from AUTHORS above. The live database's
- * authors were renamed by the user (to "Asim Raza" and "Hassan") with their
- * own emails, verified against GET /api/authors rather than assumed.
+ * These are the seed emails from AUTHORS above — the only authors this
+ * codebase deterministically creates (in seedBlog), and so the only ones a
+ * fresh database, CI run, or another developer's clone will ever have. A
+ * database that was hand-edited to rename authors and change their emails
+ * (as this developer's local database was) will not match these keys; see
+ * the position-based fallback in seedMedia's author loop for that case.
  */
 export const AUTHOR_AVATARS: Record<string, string> = {
-  'asimraza3533@gmail.com': 'avatar-asim.jpg',
-  'hassan@gmail.com': 'avatar-hassan.jpg',
+  'ada@example.com': 'avatar-asim.jpg',
+  'milo@example.com': 'avatar-hassan.jpg',
 };
