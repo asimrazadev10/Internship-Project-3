@@ -59,13 +59,22 @@ require_port_free() {
   fi
 }
 
-# Starts the dev server with STRIPE_SECRET_KEY set to whatever is passed in.
-# An empty value wins over any .env.local entry, which is how phase A forces
-# the unconfigured case.
+# Starts the dev server with STRIPE_SECRET_KEY set to $1. An exported value wins
+# over any .env.local entry, which is how phase A forces the unconfigured case.
+#
+# Pass "clear" as $2 to blank STRIPE_WEBHOOK_SECRET too. Phase A needs that:
+# inheriting a developer's real whsec_ made its webhook assertions depend on
+# whose machine the script ran on — with a secret present, a bogus signature
+# reaches getStripe() and answers 503 (no API key) instead of 400.
 start_server() {
   require_port_free
   : > "$LOG"
-  (cd "$ROOT/frontend" && exec setsid env STRIPE_SECRET_KEY="$1" npm run dev >> "$LOG" 2>&1) &
+  if [ "${2:-}" = "clear" ]; then
+    (cd "$ROOT/frontend" && exec setsid env STRIPE_SECRET_KEY="$1" STRIPE_WEBHOOK_SECRET= \
+      npm run dev >> "$LOG" 2>&1) &
+  else
+    (cd "$ROOT/frontend" && exec setsid env STRIPE_SECRET_KEY="$1" npm run dev >> "$LOG" 2>&1) &
+  fi
   server_pgid=$!
   for _ in $(seq 1 60); do
     if [ "$(curl -s -o /dev/null -w '%{http_code}' "$WEB/")" = "200" ]; then
@@ -85,7 +94,7 @@ fi
 echo "Stripe verification"
 echo "  phase A: unconfigured"
 
-start_server ""
+start_server "" clear
 
 check "GET / with no Stripe key" \
   "$(curl -s -o /dev/null -w '%{http_code}' "$WEB/")" "200"
@@ -120,6 +129,14 @@ if [ -z "${STRIPE_SECRET_KEY:-}" ]; then
   echo "        Run: STRIPE_SECRET_KEY=sk_test_... ./scripts/verify-stripe.sh"
 else
   start_server "$STRIPE_SECRET_KEY"
+
+  # With a real key AND the developer's real webhook secret inherited, a bogus
+  # signature must fail Stripe's own verification — the assertion phase A can no
+  # longer make now that it blanks the secret.
+  check "webhook rejects a bogus signature (configured)" \
+    "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$WEB/api/stripe/webhook" \
+       -H 'stripe-signature: t=1,v1=bogus' -H 'Content-Type: application/json' \
+       -d '{"id":"evt_1","type":"checkout.session.completed"}')" "400"
 
   location=$(curl -s -o /dev/null -w '%{redirect_url}' -X POST "$WEB/api/checkout")
   case "$location" in
