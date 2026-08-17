@@ -150,3 +150,7 @@ Verification:
 ./scripts/verify-stripe.sh                              # unconfigured-case checks
 STRIPE_SECRET_KEY=sk_test_... ./scripts/verify-stripe.sh # also creates a real Session
 ```
+
+## Documentation
+
+- [Stripe payment workflow](https://strapi-press-stripe-workflow.vercel.app) — the full checkout flow, diagrammed and annotated line by line.

@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stripe Payment Workflow — The Strapi Press</title>
+<style>
+  :root{
+    --bg:#f7f5f0; --panel:#fffdf8; --ink:#16130e; --muted:#5d564a;
+    --rule:#d8d1c3; --accent:#9c2b1f; --accent-soft:#f2e3e0;
+    --code-bg:#1d1a15; --code-ink:#ece5d8; --code-dim:#8a8272;
+    --ok:#2f6b3d; --warn:#8a6100;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12100d; --panel:#1a1713; --ink:#ece7dc; --muted:#a49b8b;
+      --rule:#332e26; --accent:#e0705f; --accent-soft:#3a201c;
+      --code-bg:#0c0a08; --code-ink:#ece5d8; --code-dim:#7d7566;
+      --ok:#7ec48c; --warn:#d7a93f;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.65 Georgia,"Iowan Old Style","Times New Roman",serif;
+  }
+  .wrap{max-width:64rem;margin:0 auto;padding:3rem 1.25rem 6rem}
+  header.top{border-bottom:3px double var(--rule);padding-bottom:1.5rem;margin-bottom:2.5rem}
+  .kicker{font-family:var(--mono);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0}
+  h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.05;margin:.6rem 0 .4rem;text-transform:uppercase;letter-spacing:-.01em}
+  .standfirst{color:var(--muted);font-size:1.05rem;margin:0;max-width:52ch}
+  h2{font-size:1.6rem;margin:3.5rem 0 .75rem;text-transform:uppercase;letter-spacing:.02em;border-bottom:1px solid var(--rule);padding-bottom:.4rem}
+  h3{font-size:1.1rem;margin:2rem 0 .5rem;font-family:var(--mono);letter-spacing:.04em}
+  p{max-width:68ch}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.87em;background:var(--accent-soft);padding:.1em .35em;border-radius:3px}
+  .panel{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:1.25rem 1.4rem;margin:1.5rem 0}
+  .note{border-left:4px solid var(--accent);background:var(--panel);padding:.9rem 1.1rem;margin:1.5rem 0;border-radius:0 4px 4px 0}
+  .note strong{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:.3rem}
+  .filebar{font-family:var(--mono);font-size:.78rem;letter-spacing:.06em;background:var(--code-bg);color:var(--code-dim);
+    padding:.55rem .9rem;border-radius:6px 6px 0 0;border-bottom:1px solid #3a352c;overflow-x:auto;white-space:nowrap}
+  .filebar b{color:var(--code-ink);font-weight:600}
+  .codewrap{margin:1.5rem 0;border-radius:6px;overflow:hidden;border:1px solid var(--rule)}
+  table.code{width:100%;border-collapse:collapse;background:var(--code-bg);font-family:var(--mono);font-size:.82rem;display:block;overflow-x:auto}
+  table.code tbody{display:table;width:100%;min-width:44rem}
+  table.code td{vertical-align:top;padding:.2rem .5rem;border:0}
+  table.code td.ln{color:var(--code-dim);text-align:right;width:3ch;user-select:none;padding-left:.9rem}
+  table.code td.src{color:var(--code-ink);white-space:pre;width:52%}
+  table.code td.why{color:#bdb4a2;white-space:normal;font-family:Georgia,serif;font-size:.86rem;line-height:1.5;
+    border-left:1px solid #34302a;padding-left:.9rem;padding-right:.9rem}
+  table.code tr.blank td{height:.5rem;padding:0}
+  table.code tr:hover td.src{background:#272219}
+  .kw{color:#e0955f}.str{color:#9dc98a}.cm{color:#6f6857;font-style:italic}.fn{color:#8fbde0}.num{color:#d3a3d8}
+  ol.steps{counter-reset:s;list-style:none;padding:0;max-width:68ch}
+  ol.steps li{counter-increment:s;position:relative;padding-left:3rem;margin:1.1rem 0}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:.05rem;width:2rem;height:2rem;border-radius:50%;
+    background:var(--accent);color:#fff;font-family:var(--mono);font-size:.85rem;display:grid;place-items:center}
+  ol.steps li b{font-family:var(--mono);font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;display:block;color:var(--accent)}
+  .diagram{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:1rem;margin:2rem 0;overflow-x:auto}
+  .diagram svg{display:block;min-width:52rem;width:100%;height:auto}
+  table.grid{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.92rem;display:block;overflow-x:auto}
+  table.grid tbody,table.grid thead{display:table;width:100%;min-width:38rem}
+  table.grid th,table.grid td{text-align:left;padding:.6rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top}
+  table.grid th{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  table.grid td:first-child{font-family:var(--mono);font-size:.82rem;white-space:nowrap}
+  .tag{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.15em .5em;border-radius:3px;
+    background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+  footer{margin-top:4rem;padding-top:1.5rem;border-top:3px double var(--rule);color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="kicker">The Strapi Press · Engineering Documentation</p>
+  <h1>The Stripe Payment Workflow</h1>
+  <p class="standfirst">Every file, every line, and every hop between the browser, Next.js, and Stripe
+  that turns a click on <em>SUBSCRIBE</em> into a recurring $8/month charge.</p>
+</header>
+
+<h2>1. The one-paragraph version</h2>
+<p>A reader clicks <strong>SUBSCRIBE</strong> in the masthead. That is a plain HTML form that POSTs to our
+own route, <code>/api/checkout</code>. The route asks Stripe to create a <em>Checkout Session</em> — a
+short-lived, hosted payment page — and then redirects the browser to it. The reader types their card
+details <strong>on Stripe's domain</strong>, never ours, so no card number ever touches this server. When
+they pay, Stripe sends them back to <code>/subscribe/success</code> and, separately, sends a signed
+server-to-server event to <code>/api/stripe/webhook</code>. The redirect is what the reader sees; the
+webhook is what we actually trust.</p>
+
+<div class="note">
+  <strong>The central idea</strong>
+  Two things come back from Stripe, and they are not equally trustworthy. The <em>redirect</em> is
+  driven by the user's browser and can be forged by anyone typing a URL. The <em>webhook</em> is
+  signed with a shared secret and comes straight from Stripe's servers. Anything that grants access
+  must hang off the webhook — never off the success page.
+</div>
+
+<h2>2. The whole flow, as a diagram</h2>
+
+<div class="diagram">
+<svg viewBox="0 0 900 470" role="img" aria-label="Sequence diagram of the Stripe checkout flow between the reader's browser, the Next.js app, and Stripe.">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+    </marker>
+    <marker id="ard" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9c2b1f"/>
+    </marker>
+  </defs>
+  <style>
+    .lane{fill:none;stroke:#b9b1a1;stroke-width:1.5;stroke-dasharray:5 5}
+    .head{fill:#fffdf8;stroke:#16130e;stroke-width:1.5}
+    .headt{font:600 13px ui-monospace,monospace;fill:#16130e;text-anchor:middle}
+    .msg{stroke:#16130e;stroke-width:1.6;color:#16130e}
+    .msgw{stroke:#9c2b1f;stroke-width:2.2;stroke-dasharray:7 4;color:#9c2b1f}
+    .lbl{font:12px Georgia,serif;fill:#16130e}
+    .lblw{font:italic 12px Georgia,serif;fill:#9c2b1f}
+    .sub{font:11px ui-monospace,monospace;fill:#5d564a}
+    .box{fill:#f2e3e0;stroke:#9c2b1f;stroke-width:1}
+    @media (prefers-color-scheme:dark){
+      .head{fill:#1a1713;stroke:#ece7dc}.headt{fill:#ece7dc}
+      .msg{stroke:#ece7dc;color:#ece7dc}.lbl{fill:#ece7dc}
+      .msgw{stroke:#e0705f;color:#e0705f}.lblw{fill:#e0705f}
+      .sub{fill:#a49b8b}.lane{stroke:#4a443a}.box{fill:#3a201c;stroke:#e0705f}
+    }
+  </style>
+
+  <!-- lanes -->
+  <g>
+    <rect class="head" x="40"  y="14" width="170" height="34" rx="4"/>
+    <text class="headt" x="125" y="36">Reader's browser</text>
+    <line class="lane" x1="125" y1="48" x2="125" y2="450"/>
+
+    <rect class="head" x="330" y="14" width="200" height="34" rx="4"/>
+    <text class="headt" x="430" y="36">Next.js (our server)</text>
+    <line class="lane" x1="430" y1="48" x2="430" y2="450"/>
+
+    <rect class="head" x="680" y="14" width="180" height="34" rx="4"/>
+    <text class="headt" x="770" y="36">Stripe</text>
+    <line class="lane" x1="770" y1="48" x2="770" y2="450"/>
+  </g>
+
+  <!-- 1 -->
+  <line class="msg" x1="125" y1="86" x2="425" y2="86" marker-end="url(#ar)"/>
+  <text class="lbl" x="150" y="78">① POST /api/checkout</text>
+  <text class="sub" x="150" y="101">Masthead.tsx — plain &lt;form&gt;, no JavaScript</text>
+
+  <!-- 2 -->
+  <line class="msg" x1="430" y1="130" x2="765" y2="130" marker-end="url(#ar)"/>
+  <text class="lbl" x="452" y="122">② checkout.sessions.create(…)</text>
+  <text class="sub" x="452" y="145">secret key · mode:'subscription' · $8/mo inline price</text>
+
+  <!-- 3 -->
+  <line class="msg" x1="770" y1="174" x2="435" y2="174" marker-end="url(#ar)"/>
+  <text class="lbl" x="452" y="166">③ Session { id, url }</text>
+
+  <!-- 4 -->
+  <line class="msg" x1="430" y1="206" x2="130" y2="206" marker-end="url(#ar)"/>
+  <text class="lbl" x="150" y="198">④ 303 See Other → Location: session.url</text>
+
+  <!-- 5 -->
+  <rect class="box" x="560" y="228" width="300" height="46" rx="4"/>
+  <text class="lbl" x="575" y="248">⑤ Reader enters card on checkout.stripe.com</text>
+  <text class="sub" x="575" y="265">Card data never reaches our server — PCI scope stays with Stripe</text>
+  <line class="msg" x1="125" y1="251" x2="555" y2="251" marker-end="url(#ar)"/>
+
+  <!-- 6 webhook -->
+  <line class="msgw" x1="770" y1="316" x2="435" y2="316" marker-end="url(#ard)"/>
+  <text class="lblw" x="452" y="308">⑥ POST /api/stripe/webhook — checkout.session.completed</text>
+  <text class="sub" x="452" y="331">signed: stripe-signature header + STRIPE_WEBHOOK_SECRET  ← the source of truth</text>
+
+  <!-- 7 redirect back -->
+  <line class="msg" x1="770" y1="366" x2="130" y2="366" marker-end="url(#ar)"/>
+  <text class="lbl" x="150" y="358">⑦ Redirect to /subscribe/success?session_id={CHECKOUT_SESSION_ID}</text>
+
+  <!-- 8 -->
+  <line class="msg" x1="430" y1="410" x2="765" y2="410" marker-end="url(#ar)"/>
+  <text class="lbl" x="452" y="402">⑧ checkout.sessions.retrieve(session_id) — display only</text>
+  <text class="sub" x="452" y="425">renders "You are subscribed" · grants nothing</text>
+  <line class="msg" x1="125" y1="392" x2="425" y2="392" marker-end="url(#ar)"/>
+  <text class="sub" x="150" y="385">GET /subscribe/success</text>
+</svg>
+</div>
+
+<ol class="steps">
+  <li><b>The click</b> <code>components/Masthead.tsx</code> renders a real <code>&lt;form method="POST"&gt;</code>.
+      No client JavaScript is involved, so checkout works even if the JS bundle fails to load.</li>
+  <li><b>Session creation</b> <code>app/api/checkout/route.ts</code> calls Stripe with our
+      <em>secret</em> key and describes what is being sold: $8.00 USD, recurring monthly.</li>
+  <li><b>Stripe answers</b> with a Session object whose <code>url</code> is a one-time hosted payment page.</li>
+  <li><b>The redirect</b> We answer the browser with <code>303 See Other</code> pointing at that URL.
+      303 specifically — it tells the browser to switch the POST into a GET when following the redirect.</li>
+  <li><b>Payment</b> happens entirely on <code>checkout.stripe.com</code>. Card numbers, 3-D Secure,
+      wallet buttons, and retries are all Stripe's problem, not ours.</li>
+  <li><b>The webhook</b> Stripe POSTs a signed <code>checkout.session.completed</code> event to
+      <code>app/api/stripe/webhook/route.ts</code>. This is the authoritative "the money moved" signal.</li>
+  <li><b>The return trip</b> Stripe sends the reader to our <code>success_url</code>, substituting the real
+      session id into the <code>{CHECKOUT_SESSION_ID}</code> placeholder.</li>
+  <li><b>The receipt page</b> <code>app/subscribe/success/page.tsx</code> looks the session up purely to
+      show a friendly message. If the lookup fails, the reader sees a neutral page — never a stack trace.</li>
+</ol>
+
+<h2>3. The files involved</h2>
+<table class="grid">
+  <thead><tr><th>File</th><th>Role</th><th>Runs on</th></tr></thead>
+  <tbody>
+    <tr><td>frontend/components/Masthead.tsx</td><td>The SUBSCRIBE button — a no-JS HTML form</td><td>Server-rendered HTML</td></tr>
+    <tr><td>frontend/lib/stripe.ts</td><td>Lazy Stripe client, pricing config, Session parameters</td><td>Server only</td></tr>
+    <tr><td>frontend/app/api/checkout/route.ts</td><td>Creates the Session, redirects the browser</td><td>Node.js runtime</td></tr>
+    <tr><td>frontend/app/api/stripe/webhook/route.ts</td><td>Verifies and records Stripe's signed events</td><td>Node.js runtime</td></tr>
+    <tr><td>frontend/app/subscribe/success/page.tsx</td><td>Display-only confirmation</td><td>Dynamic server render</td></tr>
+    <tr><td>frontend/app/subscribe/cancelled/page.tsx</td><td>Shown when the reader backs out</td><td>Static</td></tr>
+    <tr><td>scripts/verify-stripe.sh</td><td>End-to-end verification, with and without a Stripe key</td><td>Shell</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Line by line</h2>
+
+<h3>4.1 — The button that starts it all</h3>
+<div class="codewrap">
+<div class="filebar">frontend/components/<b>Masthead.tsx</b> · lines 31–38</div>
+<table class="code"><tbody>
+<tr><td class="ln">31</td><td class="src">&lt;<span class="fn">form</span> <span class="kw">action</span>=<span class="str">"/api/checkout"</span> <span class="kw">method</span>=<span class="str">"POST"</span>&gt;</td>
+    <td class="why">A browser-native form submission. Because it is not <code>fetch()</code>, the browser itself follows the redirect we send back — which is exactly what we want, since the destination is on another origin.</td></tr>
+<tr><td class="ln">32</td><td class="src">  &lt;<span class="fn">button</span> <span class="kw">type</span>=<span class="str">"submit"</span></td>
+    <td class="why">A submit button, not an <code>onClick</code> handler. Checkout therefore survives a broken or slow JavaScript bundle.</td></tr>
+<tr><td class="ln">36</td><td class="src">    {subscribeLabel}</td>
+    <td class="why">The label text comes from Strapi site settings, so an editor can rename "SUBSCRIBE" without a deploy.</td></tr>
+</tbody></table>
+</div>
+
+<h3>4.2 — The Stripe client and pricing (<code>lib/stripe.ts</code>)</h3>
+<div class="codewrap">
+<div class="filebar">frontend/lib/<b>stripe.ts</b> · lines 1–46</div>
+<table class="code"><tbody>
+<tr><td class="ln">1</td><td class="src"><span class="kw">import</span> Stripe <span class="kw">from</span> <span class="str">'stripe'</span>;</td>
+    <td class="why">Stripe's official <em>server-side</em> Node SDK. It must never be imported into a client component — it carries the secret key.</td></tr>
+<tr><td class="ln">4</td><td class="src"><span class="kw">export class</span> <span class="fn">MissingStripeKeyError</span> <span class="kw">extends</span> Error {</td>
+    <td class="why">A dedicated error type so callers can tell "we were never configured" apart from "Stripe rejected us". The first deserves a <span class="tag">503</span>, the second a <span class="tag">502</span>.</td></tr>
+<tr class="blank"><td colspan="3"></td></tr>
+<tr><td class="ln">11</td><td class="src"><span class="kw">let</span> client: Stripe | <span class="kw">null</span> = <span class="kw">null</span>;</td>
+    <td class="why">Module-level cache. Creating a Stripe client sets up an HTTP agent and connection pool, so we build it once per process rather than per request.</td></tr>
+<tr><td class="ln">12</td><td class="src"><span class="kw">let</span> clientKey: <span class="kw">string</span> | <span class="kw">null</span> = <span class="kw">null</span>;</td>
+    <td class="why">Remembers <em>which</em> key built the cached client. If the environment variable changes (test → live), the cache is invalidated instead of silently charging the wrong account.</td></tr>
+<tr class="blank"><td colspan="3"></td></tr>
+<tr><td class="ln">21</td><td class="src"><span class="kw">export function</span> <span class="fn">getStripe</span>(): Stripe {</td>
+    <td class="why"><strong>Lazy</strong> construction, and this is the crux: the masthead renders on <em>every</em> page. A client built at module scope would turn a missing key into a site-wide crash instead of a 503 on one route.</td></tr>
+<tr><td class="ln">22</td><td class="src">  <span class="kw">const</span> key = process.env.STRIPE_SECRET_KEY;</td>
+    <td class="why">Read at call time, not at import time — so <code>.env.local</code> is fully loaded and tests can swap it.</td></tr>
+<tr><td class="ln">23</td><td class="src">  <span class="kw">if</span> (!key) <span class="kw">throw new</span> <span class="fn">MissingStripeKeyError</span>();</td>
+    <td class="why">Fail loudly and specifically rather than letting the SDK throw a generic auth error later.</td></tr>
+<tr><td class="ln">26</td><td class="src">  <span class="kw">if</span> (!client || clientKey !== key) {</td>
+    <td class="why">Rebuild only when there is no client yet, or the key changed.</td></tr>
+<tr><td class="ln">27</td><td class="src">    client = <span class="kw">new</span> <span class="fn">Stripe</span>(key);</td>
+    <td class="why">No API-version pin: the SDK's bundled default version is used, which matches the typings it ships with.</td></tr>
+<tr class="blank"><td colspan="3"></td></tr>
+<tr><td class="ln">38</td><td class="src">  <span class="kw">const</span> parsedPrice = <span class="fn">Number</span>(process.env.SUBSCRIPTION_PRICE_CENTS);</td>
+    <td class="why">Env vars are always strings. <code>Number("")</code> is <code>0</code> and <code>Number("abc")</code> is <code>NaN</code> — both are caught below.</td></tr>
+<tr><td class="ln">41</td><td class="src">  siteUrl: process.env.SITE_URL ?? <span class="str">'http://localhost:3000'</span>,</td>
+    <td class="why">The base for the success and cancel URLs. Must be the public origin in production, or Stripe will bounce readers to localhost.</td></tr>
+<tr><td class="ln">42</td><td class="src">  priceCents: Number.<span class="fn">isFinite</span>(parsedPrice) &amp;&amp; parsedPrice &gt; <span class="num">0</span></td>
+    <td class="why">Rejects <code>NaN</code>, <code>Infinity</code>, zero and negatives, falling back to <span class="tag">800 = $8.00</span>. Stripe amounts are always in the currency's smallest unit.</td></tr>
+<tr><td class="ln">44</td><td class="src">  currency: (process.env.SUBSCRIPTION_CURRENCY ?? <span class="str">'usd'</span>).<span class="fn">toLowerCase</span>()</td>
+    <td class="why">Stripe requires lowercase ISO currency codes; normalising here means <code>USD</code> in the env file still works.</td></tr>
+</tbody></table>
+</div>
+
+<div class="codewrap">
+<div class="filebar">frontend/lib/<b>stripe.ts</b> · lines 54–81 — what we are actually selling</div>
+<table class="code"><tbody>
+<tr><td class="ln">63</td><td class="src">  mode: <span class="str">'subscription'</span>,</td>
+    <td class="why">The single most important field. <code>'payment'</code> would be a one-off charge; <code>'subscription'</code> tells Stripe to create a recurring Subscription and bill it automatically each period.</td></tr>
+<tr><td class="ln">65</td><td class="src">  line_items: [{</td>
+    <td class="why">What appears on the hosted checkout page. Prices are set <strong>server-side</strong> — a client can never send us an amount, so nobody can subscribe for one cent.</td></tr>
+<tr><td class="ln">67</td><td class="src">    quantity: <span class="num">1</span>,</td>
+    <td class="why">One seat. Multiplies the unit amount.</td></tr>
+<tr><td class="ln">68</td><td class="src">    price_data: {</td>
+    <td class="why">An <em>inline</em> price, defined in code, instead of a Price ID created in the Stripe dashboard. The trade-off is deliberate: a fresh Stripe account needs nothing but API keys to run this. The cost is that inline prices are single-use and never appear in the product catalog — worth revisiting once real content is gated.</td></tr>
+<tr><td class="ln">70</td><td class="src">      unit_amount: priceCents,</td>
+    <td class="why">Cents, not dollars. <code>800</code> means $8.00. Passing <code>8</code> here would charge eight cents.</td></tr>
+<tr><td class="ln">71</td><td class="src">      recurring: { interval: <span class="str">'month'</span> },</td>
+    <td class="why">Required whenever mode is <code>'subscription'</code>. It is what makes this a monthly plan rather than a single sale.</td></tr>
+<tr><td class="ln">72</td><td class="src">      product_data: { name: <span class="str">'The Strapi Press — Monthly'</span> }</td>
+    <td class="why">The line the customer reads on the checkout page and on the emailed receipt.</td></tr>
+<tr class="blank"><td colspan="3"></td></tr>
+<tr><td class="ln">78</td><td class="src">  success_url: <span class="str">`${siteUrl}/subscribe/success</span></td>
+    <td class="why">Where Stripe sends the reader after a successful payment.</td></tr>
+<tr><td class="ln">78</td><td class="src">    <span class="str">?session_id={CHECKOUT_SESSION_ID}`</span></td>
+    <td class="why"><strong>Not</strong> a JS template placeholder — it survives into the final string on purpose. Stripe itself does the substitution at redirect time, inserting the real <code>cs_…</code> id. Writing <code>${sessionId}</code> here would be impossible anyway: the id does not exist yet.</td></tr>
+<tr><td class="ln">79</td><td class="src">  cancel_url: <span class="str">`${siteUrl}/subscribe/cancelled`</span></td>
+    <td class="why">Where the reader lands if they press Stripe's back arrow. Nothing was charged; the page says so.</td></tr>
+</tbody></table>
+</div>
+
+<h3>4.3 — Creating the session (<code>app/api/checkout/route.ts</code>)</h3>
+<div class="codewrap">
+<div class="filebar">frontend/app/api/checkout/<b>route.ts</b> · lines 8–49</div>
+<table class="code"><tbody>
+<tr><td class="ln">8</td><td class="src"><span class="kw">export const</span> runtime = <span class="str">'nodejs'</span>;</td>
+    <td class="why">Forces the Node.js runtime instead of Edge. The Stripe SDK expects Node APIs, and the webhook route needs Node's crypto for signature verification.</td></tr>
+<tr><td class="ln">9</td><td class="src"><span class="kw">export const</span> dynamic = <span class="str">'force-dynamic'</span>;</td>
+    <td class="why">Never prerender or cache this. Each request must mint a brand-new Session; a cached response would hand two readers the same payment page.</td></tr>
+<tr><td class="ln">19</td><td class="src"><span class="kw">export async function</span> <span class="fn">POST</span>(): <span class="fn">Promise</span>&lt;Response&gt; {</td>
+    <td class="why">No <code>request</code> parameter at all — and that is the security argument. The route reads <em>nothing</em> from the caller, so a cross-origin POST can at worst create an unused Session. That is why there is no CSRF token here; add one the moment this starts accepting a plan or customer.</td></tr>
+<tr><td class="ln">23</td><td class="src">  <span class="kw">const</span> stripe = <span class="fn">getStripe</span>();</td>
+    <td class="why">Inside the <code>try</code>, so a missing key becomes a handled 503 instead of an unhandled 500.</td></tr>
+<tr><td class="ln">24</td><td class="src">  <span class="kw">const</span> session = <span class="kw">await</span> stripe.checkout.sessions.<span class="fn">create</span>(</td>
+    <td class="why">The one network call to Stripe. Authenticated by the secret key; returns a Session with an <code>id</code> and a hosted <code>url</code>.</td></tr>
+<tr><td class="ln">25</td><td class="src">    <span class="fn">buildCheckoutSessionParams</span>(<span class="fn">subscriptionConfig</span>())</td>
+    <td class="why">Config and parameter-building are pure functions kept in <code>lib/stripe.ts</code>, which is what makes them unit-testable without hitting the network (see <code>lib/stripe.test.ts</code>).</td></tr>
+<tr><td class="ln">29</td><td class="src">  <span class="kw">if</span> (error <span class="kw">instanceof</span> MissingStripeKeyError)</td>
+    <td class="why"><span class="tag">503 Service Unavailable</span> — "this feature isn't turned on", an operator problem, not a bug.</td></tr>
+<tr><td class="ln">35</td><td class="src">  console.<span class="fn">error</span>(<span class="str">'[stripe] failed to create…'</span>, error);</td>
+    <td class="why">Stripe's error messages can name account internals, so the detail is <em>logged</em> and the client gets a bland sentence.</td></tr>
+<tr><td class="ln">36</td><td class="src">  <span class="kw">return new</span> <span class="fn">Response</span>(<span class="str">'Could not start checkout.'</span>, { status: <span class="num">502</span> });</td>
+    <td class="why"><span class="tag">502 Bad Gateway</span> — our upstream (Stripe) failed, and honestly reporting that is better than a generic 500.</td></tr>
+<tr><td class="ln">39</td><td class="src">  <span class="kw">if</span> (!url) {</td>
+    <td class="why"><code>session.url</code> is typed as nullable (it is null for some session types). Handling it keeps TypeScript honest and prevents a redirect to <code>Location: null</code>.</td></tr>
+<tr><td class="ln">44</td><td class="src">  <span class="kw">return new</span> <span class="fn">Response</span>(<span class="kw">null</span>, { status: <span class="num">303</span>,</td>
+    <td class="why"><strong>303 See Other</strong>, chosen precisely: it instructs the browser to follow the redirect with a <em>GET</em>. A 307 would replay the POST against Stripe's page and break.</td></tr>
+<tr><td class="ln">44</td><td class="src">    headers: { Location: url } });</td>
+    <td class="why">The hosted Stripe Checkout URL. From here the reader is on Stripe's domain.</td></tr>
+<tr><td class="ln">47</td><td class="src"><span class="kw">export async function</span> <span class="fn">GET</span>() … <span class="num">405</span></td>
+    <td class="why">A crawler or a pasted URL shouldn't create payment sessions. <code>Allow: POST</code> is included because RFC 9110 requires it on a 405.</td></tr>
+</tbody></table>
+</div>
+
+<h3>4.4 — The webhook: the part you actually trust</h3>
+<div class="codewrap">
+<div class="filebar">frontend/app/api/stripe/webhook/<b>route.ts</b> · lines 12–58</div>
+<table class="code"><tbody>
+<tr><td class="ln">12</td><td class="src"><span class="kw">const</span> MAX_BODY_BYTES = <span class="num">1_048_576</span>;</td>
+    <td class="why">1 MB ceiling. Real Stripe events are a few KB. This bounds the buffering done by <code>request.text()</code> — which happens <em>before</em> signature verification and is therefore reachable by anyone on the internet, not just Stripe.</td></tr>
+<tr><td class="ln">21</td><td class="src">  <span class="kw">const</span> secret = process.env.STRIPE_WEBHOOK_SECRET;</td>
+    <td class="why">A different secret from the API key (<code>whsec_…</code>). It is the shared key used to sign the payload.</td></tr>
+<tr><td class="ln">22</td><td class="src">  <span class="kw">const</span> signature = request.headers.<span class="fn">get</span>(<span class="str">'stripe-signature'</span>);</td>
+    <td class="why">Stripe's header carrying a timestamp and one or more HMAC-SHA256 digests of the raw body.</td></tr>
+<tr><td class="ln">24</td><td class="src">  <span class="kw">const</span> contentLength = <span class="fn">Number</span>(…<span class="str">'content-length'</span>);</td>
+    <td class="why">Checked <em>before</em> the read. The guard cannot move later: by the time the body has been read, the unbounded buffering it exists to prevent has already happened.</td></tr>
+<tr><td class="ln">26</td><td class="src">  <span class="kw">return</span> <span class="fn">json</span>({ error: <span class="str">'payload too large'</span> }, <span class="num">413</span>);</td>
+    <td class="why"><span class="tag">413</span> Content Too Large.</td></tr>
+<tr><td class="ln">32</td><td class="src">  <span class="kw">const</span> rawBody = <span class="kw">await</span> request.<span class="fn">text</span>();</td>
+    <td class="why"><strong>Raw text, never <code>request.json()</code>.</strong> The signature is a hash of these exact bytes; a round trip through <code>JSON.parse</code> and back would reorder keys and change whitespace, and verification would fail forever. This is the single most common way a Stripe webhook gets broken.</td></tr>
+<tr><td class="ln">36</td><td class="src">  <span class="kw">if</span> (!secret || !signature) <span class="kw">return</span> … <span class="num">400</span>;</td>
+    <td class="why">A missing secret is a misconfiguration, and the safe reading of a misconfigured verifier is "reject" — never "accept unverified". Note it returns the same generic 400 as a bad signature, so probing tells an attacker nothing.</td></tr>
+<tr><td class="ln">42</td><td class="src">  event = <span class="fn">getStripe</span>().webhooks.<span class="fn">constructEvent</span>(rawBody, signature, secret);</td>
+    <td class="why">The verification itself. It recomputes the HMAC, compares in constant time, and rejects timestamps outside a tolerance window — which is what stops an attacker replaying a captured "payment succeeded" event. It throws on failure; it returns a typed <code>Stripe.Event</code> on success.</td></tr>
+<tr><td class="ln">44</td><td class="src">  <span class="kw">if</span> (error <span class="kw">instanceof</span> MissingStripeKeyError) … <span class="num">503</span></td>
+    <td class="why">Again separating "not configured" from "not authentic".</td></tr>
+<tr><td class="ln">50</td><td class="src">  <span class="kw">if</span> (event.type === <span class="str">'checkout.session.completed'</span>) {</td>
+    <td class="why">The event that means a reader finished paying. This is the hook where entitlements would be granted — creating a subscriber record, flipping a flag in Strapi, sending a welcome email.</td></tr>
+<tr><td class="ln">51</td><td class="src">    <span class="kw">const</span> session = event.data.object;</td>
+    <td class="why">The Checkout Session as Stripe saw it at completion — narrowed to the right type by the <code>event.type</code> check above.</td></tr>
+<tr><td class="ln">52</td><td class="src">    console.<span class="fn">info</span>(<span class="str">`[stripe] checkout.session.completed …`</span>);</td>
+    <td class="why">Today the handler only logs id, <code>payment_status</code> and email. That is the honest current state: nothing is gated behind the subscription yet, so there is nothing to unlock.</td></tr>
+<tr><td class="ln">58</td><td class="src">  <span class="kw">return</span> <span class="fn">json</span>({ received: <span class="kw">true</span> });</td>
+    <td class="why"><span class="tag">200</span> quickly, for <em>every</em> verified event including ones we ignore. A non-2xx makes Stripe retry with backoff for days; slow work belongs in a queue, not in this response.</td></tr>
+</tbody></table>
+</div>
+
+<div class="note">
+  <strong>Not yet handled — and deliberately so</strong>
+  The route acknowledges every verified event but only acts on <code>checkout.session.completed</code>.
+  A production subscription business also needs <code>invoice.paid</code> (the renewal each month),
+  <code>invoice.payment_failed</code> (dunning), and <code>customer.subscription.deleted</code>
+  (cancellation). It also needs <em>idempotency</em>: Stripe can deliver the same event more than once,
+  so any state change must be keyed on <code>event.id</code>.
+</div>
+
+<h3>4.5 — The success page: pleasant, and powerless</h3>
+<div class="codewrap">
+<div class="filebar">frontend/app/subscribe/success/<b>page.tsx</b> · lines 6–42</div>
+<table class="code"><tbody>
+<tr><td class="ln">6</td><td class="src"><span class="kw">export const</span> dynamic = <span class="str">'force-dynamic'</span>;</td>
+    <td class="why">Reading <code>searchParams</code> already forces dynamic rendering; it is stated explicitly so nobody later mistakes this for one of the statically generated blog routes.</td></tr>
+<tr><td class="ln">9</td><td class="src"><span class="kw">new</span> Intl.<span class="fn">NumberFormat</span>(<span class="str">'en-US'</span>, { style: <span class="str">'currency'</span>, …})</td>
+    <td class="why">Turns Stripe's integer cents into "$8.00" with the correct symbol for whatever currency came back.</td></tr>
+<tr><td class="ln">12</td><td class="src">}).<span class="fn">format</span>(amountCents / <span class="num">100</span>);</td>
+    <td class="why">The cents → major-unit conversion, mirroring the <code>unit_amount: 800</code> we sent.</td></tr>
+<tr><td class="ln">25</td><td class="src"><span class="kw">const</span> { session_id: sessionId } = <span class="kw">await</span> searchParams;</td>
+    <td class="why">In this Next.js version <code>searchParams</code> is a Promise and must be awaited. This is the value Stripe substituted into <code>{CHECKOUT_SESSION_ID}</code>.</td></tr>
+<tr><td class="ln">32</td><td class="src"><span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">getStripe</span>().checkout.sessions.<span class="fn">retrieve</span>(sessionId);</td>
+    <td class="why">A read-only lookup, server-side. <strong>It grants nothing and unlocks nothing</strong> — anyone can visit this URL with an invented id, so the page is display-only. The webhook is the trustworthy confirmation.</td></tr>
+<tr><td class="ln">33</td><td class="src">paymentStatus = session.payment_status;</td>
+    <td class="why">Usually <code>'paid'</code>. It can legitimately be <code>'unpaid'</code> for delayed methods, which is why line 67 renders "Payment pending" rather than assuming success.</td></tr>
+<tr><td class="ln">37</td><td class="src"><span class="kw">} catch</span> { paymentStatus = <span class="kw">null</span>; }</td>
+    <td class="why">An unknown id, an unconfigured key, and a Stripe outage all land here. None of them is an error worth showing a reader, so all three fall through to the neutral "Session not found" state.</td></tr>
+<tr><td class="ln">50</td><td class="src">If you were charged, your receipt from Stripe is the record of it.</td>
+    <td class="why">The failure copy still tells the reader something true and useful, instead of implying their money vanished.</td></tr>
+</tbody></table>
+</div>
+
+<h2>5. Configuration</h2>
+<table class="grid">
+  <thead><tr><th>Variable</th><th>Example</th><th>What happens without it</th></tr></thead>
+  <tbody>
+    <tr><td>STRIPE_SECRET_KEY</td><td><code>sk_test_…</code></td><td>Checkout returns <span class="tag">503</span>; the rest of the site is unaffected — that is the whole point of the lazy client.</td></tr>
+    <tr><td>STRIPE_WEBHOOK_SECRET</td><td><code>whsec_…</code></td><td>Every webhook is rejected with <span class="tag">400</span>. Never accepted unverified.</td></tr>
+    <tr><td>SITE_URL</td><td><code>https://example.com</code></td><td>Falls back to <code>http://localhost:3000</code> — fine in dev, broken in production.</td></tr>
+    <tr><td>SUBSCRIPTION_PRICE_CENTS</td><td><code>800</code></td><td>Defaults to 800 ($8.00). Non-numeric, zero, or negative values are ignored.</td></tr>
+    <tr><td>SUBSCRIPTION_CURRENCY</td><td><code>usd</code></td><td>Defaults to <code>usd</code>. Lowercased automatically.</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Testing it locally</h2>
+<div class="panel">
+<p style="margin-top:0"><strong>Webhooks in development.</strong> Stripe cannot reach <code>localhost</code>, so forward events with the Stripe CLI. It prints the <code>whsec_…</code> to put in <code>.env.local</code>:</p>
+<pre style="background:var(--code-bg);color:var(--code-ink);padding:.9rem;border-radius:4px;overflow-x:auto;font-size:.82rem"><code>stripe listen --forward-to localhost:3000/api/stripe/webhook
+stripe trigger checkout.session.completed</code></pre>
+<p><strong>Test cards.</strong> <code>4242 4242 4242 4242</code> succeeds; <code>4000 0000 0000 9995</code> is declined for insufficient funds. Any future expiry and any CVC.</p>
+<p style="margin-bottom:0"><strong>The repo's own check.</strong> <code>scripts/verify-stripe.sh</code> runs two phases: Phase A proves the site is unharmed by an <em>unconfigured</em> payment integration and needs no Stripe account at all; Phase B creates a real Checkout Session, and runs only when <code>STRIPE_SECRET_KEY</code> is exported into its environment.</p>
+</div>
+
+<h2>7. Why it is built this way</h2>
+<table class="grid">
+  <thead><tr><th>Decision</th><th>Reasoning</th></tr></thead>
+  <tbody>
+    <tr><td>Hosted Checkout, not a custom card form</td><td>Card details never reach our servers, which keeps PCI scope with Stripe and gets 3-D Secure, wallets, and localisation for free.</td></tr>
+    <tr><td>Plain HTML form</td><td>Payment works without client JavaScript, and there is no fetch/CORS/redirect-handling complexity.</td></tr>
+    <tr><td>Inline price, not a dashboard Price ID</td><td>A fresh Stripe account needs only API keys. The cost — no product catalog entry — is acceptable while nothing is gated.</td></tr>
+    <tr><td>Lazy Stripe client</td><td>The masthead is on every page; a module-scope client would make one missing env var take down the whole site.</td></tr>
+    <tr><td>Raw body in the webhook</td><td>Signature verification hashes the exact bytes. Parsing first breaks it permanently.</td></tr>
+    <tr><td>Success page grants nothing</td><td>The URL is user-controlled and forgeable. Only the signed webhook is evidence that money moved.</td></tr>
+    <tr><td>Distinct 503 / 502 / 400 codes</td><td>Each tells an operator a different true thing: not configured, upstream failed, not authentic.</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Generated from the code in <code>frontend/</code> at commit <code>4c1b172</code> · 17 August 2026.
+  Line numbers refer to the files as they stand at that commit; re-read the source if it has moved on.
+  <br>Published at <a href="https://strapi-press-stripe-workflow.vercel.app">https://strapi-press-stripe-workflow.vercel.app</a>.
+</footer>
+
+</div>
+</body>
+</html>
