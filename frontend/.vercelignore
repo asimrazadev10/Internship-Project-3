@@ -1,0 +1,12 @@
+# Vercel builds from source; shipping local build output and dependencies is
+# both unnecessary and large enough to fail the upload (.next alone is ~380 MB).
+.next
+node_modules
+coverage
+*.log
+
+# Local-only env files. Real values belong in Vercel's project environment
+# variables, never in the upload.
+.env
+.env.*
+!.env.example
