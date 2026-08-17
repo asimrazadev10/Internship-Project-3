@@ -29,7 +29,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       {articles.length === 0 ? (
         <p className="font-display mt-8 uppercase tracking-widest">Nothing filed here yet.</p>
       ) : (
-        <div className="mt-10 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {articles.map((article) => (
             <ArticleCard key={article.slug} article={article} />
           ))}

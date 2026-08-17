@@ -37,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CategoryBar categories={categories} />
         <main className="mx-auto max-w-6xl px-5 py-10">{children}</main>
         <footer className="mt-16 border-t border-rule">
-          <div className="mx-auto flex max-w-6xl justify-between px-5 py-6">
+          <div className="mx-auto flex max-w-6xl flex-col justify-between gap-2 px-5 py-6 sm:flex-row">
             <span className="font-display text-xs uppercase tracking-widest">
               {settings?.footerText || 'The Strapi Press'}
             </span>

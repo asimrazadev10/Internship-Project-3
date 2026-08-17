@@ -27,7 +27,7 @@ export default async function Home() {
         </div>
       </div>
       {grid.length > 0 && (
-        <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {grid.map((article) => (
             <ArticleCard key={article.slug} article={article} />
           ))}
