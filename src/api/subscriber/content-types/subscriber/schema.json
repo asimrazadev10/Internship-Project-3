@@ -1,0 +1,26 @@
+{
+  "kind": "collectionType",
+  "collectionName": "subscribers",
+  "info": {
+    "singularName": "subscriber",
+    "pluralName": "subscribers",
+    "displayName": "Subscriber",
+    "description": "Fulfilment record. Written only by the verified webhook, never by a client redirect."
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {},
+  "attributes": {
+    "orderRef": { "type": "string", "required": true, "unique": true },
+    "email": { "type": "email" },
+    "stripeCustomerId": { "type": "string" },
+    "stripeSubscriptionId": { "type": "string" },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "active", "past_due", "canceled"],
+      "default": "pending"
+    },
+    "amountTotal": { "type": "integer" },
+    "currency": { "type": "string" },
+    "activatedAt": { "type": "datetime" }
+  }
+}

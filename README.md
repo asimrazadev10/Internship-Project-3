@@ -113,44 +113,83 @@ both authors get an avatar.
 Uploaded files land in `public/uploads/`, which is gitignored: those are
 generated, `assets/media/` is source.
 
-### Subscriptions
+### Subscriptions (PaymentIntents + Payment Element)
 
-The masthead's SUBSCRIBE button posts to `/api/checkout`, which creates a Stripe
-Checkout Session and redirects to Stripe's hosted page. Hosted Checkout needs no
-publishable key and no client-side JavaScript, so the button is a plain form POST
-and the blog's static rendering is unaffected.
+The masthead's SUBSCRIBE control links to `/subscribe`, which mounts Stripe's
+Payment Element. There is no hosted Checkout page and no `Charge` object
+anywhere; everything runs through the PaymentIntents API.
 
-Set up test mode:
+**How the money flows**
+
+1. `/subscribe` (server component) calls `POST /api/payments/subscription`.
+2. That route prices the plan **server-side** — the browser never sends an
+   amount — creates a Customer and a Subscription with
+   `payment_behavior: 'default_incomplete'`, and returns only the first
+   invoice's PaymentIntent client secret. Every mutating call carries an
+   `Idempotency-Key` derived from a freshly minted `orderRef`, so a retry or a
+   double submit cannot charge twice.
+3. The browser confirms that intent with the Payment Element.
+   `automatic_payment_methods` is enabled, so Stripe decides which methods to
+   render; nothing is hardcoded. 3D Secure is handled by `confirmPayment` with
+   `redirect: 'if_required'`.
+4. **Fulfilment happens only in the webhook.** `/subscribe/return` reads the
+   intent purely to tell the customer what happened and grants nothing.
+
+**The webhook lives in Strapi, not Next** — fulfilment and the idempotency
+ledger are database writes, and Strapi owns the database. It verifies the
+signature against the raw request bytes (`config/middlewares.ts` sets
+`includeUnparsed: true`), claims the event id in a `payment-event` ledger row,
+returns 200 immediately, and only then does the fulfilment work.
+
+Exactly-once is enforced by a real database unique index on
+`payment_events.event_id`, created at bootstrap. Strapi's `unique: true` is
+application-level validation and does **not** create one, and the webhook writes
+through `strapi.db.query()`, which bypasses that validation — so without the
+index, de-duplication would be a comment rather than a guarantee.
+
+**Keys**
+
+| Variable | Where | Secret? |
+|---|---|---|
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `frontend/.env.local` | No — public by design |
+| `STRIPE_SECRET_KEY` | `frontend/.env.local` and root `.env` | Yes |
+| `STRIPE_WEBHOOK_SECRET` | root `.env` (Strapi) | Yes |
+| `STRIPE_PRICE_ID` | optional, recommended in production | No |
+
+**Testing the webhook locally with the Stripe CLI**
 
 ```bash
-cd frontend
-cp .env.example .env.local          # then paste your sk_test_... key
-# stripe is a separate binary, not an npm package — install it from
-# https://docs.stripe.com/stripe-cli
-stripe listen --forward-to localhost:3000/api/stripe/webhook
-# copy the whsec_... it prints into STRIPE_WEBHOOK_SECRET in .env.local
-npm run dev
+# 1. Install the CLI — a standalone binary, NOT an npm package.
+#    https://docs.stripe.com/stripe-cli
+#    (`npx stripe` does not work: the npm "stripe" package is the SDK and
+#     ships no executable.)
+
+# 2. Pair it with your account. Opens a browser to confirm.
+stripe login
+
+# 3. Forward events to the Strapi receiver — port 1337, not 3000.
+#    Leave this running; it prints a whsec_... signing secret.
+stripe listen --forward-to localhost:1337/api/stripe/webhook
+
+# 4. Put that secret in the repo-root .env as STRIPE_WEBHOOK_SECRET and
+#    restart Strapi. The secret is regenerated every time `stripe listen`
+#    starts, so re-paste it after a restart.
+./scripts/restart-dev.sh
+
+# 5. Drive a real payment: open http://localhost:3000/subscribe and pay with
+#    4242 4242 4242 4242, any future expiry, any CVC.
+#    For the 3D Secure path use 4000 0025 0000 3155.
+#    For a decline use 4000 0000 0000 9995.
+
+# 6. Or fire events directly, without the UI:
+stripe trigger payment_intent.succeeded
+stripe trigger payment_intent.payment_failed
+
+# 7. Watch what the receiver did:
+grep '\[stripe\]' /tmp/strapi.log
 ```
 
-Click SUBSCRIBE and pay with a Stripe test card:
+`./scripts/verify-stripe.sh` covers all of this without the CLI: it signs events
+with Stripe's own HMAC construction, so it exercises real signature
+verification, replay suppression, and fulfilment against the database.
 
-| Card | Result |
-|---|---|
-| `4242 4242 4242 4242` | succeeds |
-| `4000 0025 0000 3155` | requires 3D Secure authentication |
-| `4000 0000 0000 9995` | declined, insufficient funds |
-
-Any future expiry date, any three-digit CVC, any postcode.
-
-With no Stripe keys set the site runs normally and `/api/checkout` returns 503.
-
-Verification:
-
-```bash
-./scripts/verify-stripe.sh                              # unconfigured-case checks
-STRIPE_SECRET_KEY=sk_test_... ./scripts/verify-stripe.sh # also creates a real Session
-```
-
-## Documentation
-
-- [Stripe payment workflow](https://strapi-press-stripe-workflow.vercel.app) — the full checkout flow, diagrammed and annotated line by line.

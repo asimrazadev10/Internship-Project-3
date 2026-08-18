@@ -1,0 +1,23 @@
+{
+  "kind": "collectionType",
+  "collectionName": "payment_events",
+  "info": {
+    "singularName": "payment-event",
+    "pluralName": "payment-events",
+    "displayName": "Payment Event",
+    "description": "Ledger of Stripe webhook events already processed. The unique eventId is what makes fulfilment exactly-once."
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {},
+  "attributes": {
+    "eventId": { "type": "string", "required": true, "unique": true },
+    "eventType": { "type": "string", "required": true },
+    "status": {
+      "type": "enumeration",
+      "enum": ["processing", "processed", "failed"],
+      "default": "processing"
+    },
+    "payloadSummary": { "type": "text" },
+    "failureReason": { "type": "text" }
+  }
+}

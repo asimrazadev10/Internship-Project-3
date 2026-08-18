@@ -1,4 +1,5 @@
 import type { Core } from '@strapi/strapi';
+import { ensureEventLedgerIndex } from './api/stripe-webhook/services/ledger-index';
 import {
   enrichExistingArticles,
   grantPublicReadAccess,
@@ -25,6 +26,10 @@ export default {
    * Both calls are idempotent, so restarts are harmless.
    */
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
+    // First, because webhook de-duplication is only a guarantee once this
+    // index exists — Strapi's `unique: true` alone does not create one.
+    await ensureEventLedgerIndex(strapi);
+
     await seedBlog(strapi);
     await seedMedia(strapi);
     await enrichExistingArticles(strapi);

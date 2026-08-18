@@ -32,14 +32,18 @@ export function Masthead({ settings }: { settings: SiteSettings | null }) {
               {link.label}
             </Link>
           ))}
-          <form action="/api/checkout" method="POST">
-            <button
-              type="submit"
-              className="cursor-pointer uppercase tracking-widest text-accent hover:underline min-h-[44px] min-w-[44px] flex items-center"
-            >
-              {subscribeLabel}
-            </button>
-          </form>
+          {/*
+            A link, not a form POST. Payment now happens on /subscribe with the
+            Payment Element, which needs a client secret minted per visitor —
+            so there is nothing for a form to post, and no price ever travels
+            through the browser.
+          */}
+          <Link
+            href="/subscribe"
+            className="min-h-[44px] min-w-[44px] flex items-center uppercase tracking-widest text-accent hover:underline"
+          >
+            {subscribeLabel}
+          </Link>
         </nav>
 
         {/* Mobile hamburger */}
@@ -92,14 +96,13 @@ export function Masthead({ settings }: { settings: SiteSettings | null }) {
                   {link.label}
                 </Link>
               ))}
-              <form action="/api/checkout" method="POST" className="mt-4">
-                <button
-                  type="submit"
-                  className="min-h-[44px] w-full cursor-pointer uppercase tracking-widest text-accent hover:underline text-left"
-                >
-                  {subscribeLabel}
-                </button>
-              </form>
+              <Link
+                href="/subscribe"
+                className="mt-4 min-h-[44px] flex items-center uppercase tracking-widest text-accent hover:underline"
+                onClick={() => setMenuOpen(false)}
+              >
+                {subscribeLabel}
+              </Link>
             </nav>
           </div>
         </div>
